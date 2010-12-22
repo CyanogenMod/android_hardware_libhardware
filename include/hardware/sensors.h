@@ -426,8 +426,9 @@ static inline int sensors_close(struct sensors_poll_device_t* device) {
     return device->common.close(&device->common);
 }
 
-__END_DECLS
-
+/* Older implementation */
 #include <hardware/sensors_deprecated.h>
+
+__END_DECLS
 
 #endif  // ANDROID_SENSORS_INTERFACE_H
