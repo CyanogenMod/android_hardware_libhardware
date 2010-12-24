@@ -48,6 +48,14 @@ enum {
     OVERLAY_FORMAT_BGRA_8888    = HAL_PIXEL_FORMAT_BGRA_8888,
     OVERLAY_FORMAT_YCbYCr_422_I = 0x14,
     OVERLAY_FORMAT_CbYCrY_422_I = 0x16,
+#ifdef OMAP_ENHANCEMENT
+    OVERLAY_FORMAT_YCbCr_422_SP = HAL_PIXEL_FORMAT_YCbCr_422_SP,
+    OVERLAY_FORMAT_YCbCr_420_SP = HAL_PIXEL_FORMAT_YCbCr_420_SP,
+    OVERLAY_FORMAT_CbYCrY_420_I = HAL_PIXEL_FORMAT_CbYCrY_420_I,
+    OVERLAY_FORMAT_YCbYCr_420_I = HAL_PIXEL_FORMAT_YCbCr_420_I,
+    //NV12 Interlaced (Sequential Top-Bottom)
+    OVERLAY_FORMAT_YCbCr_420_SP_SEQ_TB = HAL_PIXEL_FORMAT_YCbCr_420_SP_SEQ_TB,
+#endif
     OVERLAY_FORMAT_DEFAULT      = 99    // The actual color format is determined
                                         // by the overlay
 };
@@ -76,8 +84,79 @@ enum {
     OVERLAY_TRANSFORM    = 4,
     /* enable or disable HDMI Mirroring of Video */
     OVERLAY_HDMI_ENABLE  = 8,
+#ifdef OMAP_ENHANCEMENT
+     /* plane alpha value */
+    OVERLAY_PLANE_ALPHA        = 2,
+    /* z-order for the plane */
+    OVERLAY_PLANE_Z_ORDER              = 5,
+    /* color key control support */
+    OVERLAY_COLOR_KEY                  = 6,
+    /* set the number of Overlay Buffers */
+    OVERLAY_NUM_BUFFERS                        = 7,
+    /* set the Display panel Width */
+    OVERLAY_SET_DISPLAY_WIDTH  = 8,
+    /* set the Display panel Height */
+    OVERLAY_SET_DISPLAY_HEIGHT         = 9,
+    /* screen selection*/
+    OVERLAY_SET_SCREEN_ID = 10,
+    /* Stereo 3D display mode */
+    OVERLAY_SET_S3D_MODE = 11,
+    /* Frame format */
+    OVERLAY_SET_S3D_FORMAT = 12,
+    /* Frame order */
+    OVERLAY_SET_S3D_ORDER = 13,
+    /* Frame subsampling s*/
+    OVERLAY_SET_S3D_SUBSAMPLING =14,
+#endif
 };
 
+#ifdef OMAP_ENHANCEMENT
+/* values for the possible screen IDs */
+enum {
+    /* primary display panel */
+    OVERLAY_ON_PRIMARY                         = 0,
+    /* secondary display panel */
+    OVERLAY_ON_SECONDARY               = 1,
+    /* external display: HDTV */
+    OVERLAY_ON_TV                              = 2,
+    /* PICO DLP */
+    OVERLAY_ON_PICODLP                 = 3,
+    /* virtual display sink */
+    OVERLAY_ON_VIRTUAL_SINK            = 4
+};
+
+/*values for possible S3D modes*/
+enum {
+    OVERLAY_S3D_MODE_OFF = 0,
+    OVERLAY_S3D_MODE_ON = 1,
+    OVERLAY_S3D_MODE_ANAGLYPH = 2,
+};
+
+/*values for possible S3D format types*/
+enum {
+    OVERLAY_S3D_FORMAT_NONE = 0,
+    OVERLAY_S3D_FORMAT_OVERUNDER,
+    OVERLAY_S3D_FORMAT_SIDEBYSIDE,
+    OVERLAY_S3D_FORMAT_ROW_IL,
+    OVERLAY_S3D_FORMAT_COL_IL,
+    OVERLAY_S3D_FORMAT_PIX_IL,
+    OVERLAY_S3D_FORMAT_CHECKB,
+    OVERLAY_S3D_FORMAT_FRM_SEQ,
+};
+
+/*values for possible S3D order types*/
+enum {
+    OVERLAY_S3D_ORDER_LF = 0,
+    OVERLAY_S3D_ORDER_RF,
+};
+
+/*values for possible S3D subsampling modes*/
+enum {
+    OVERLAY_S3D_SS_NONE = 0,
+    OVERLAY_S3D_SS_HOR,
+    OVERLAY_S3D_SS_VERT,
+};
+#endif
 /* enable/disable value setParameter() */
 enum {
     OVERLAY_DISABLE = 0,
@@ -154,6 +233,11 @@ struct overlay_control_device_t {
     overlay_t* (*createOverlay)(struct overlay_control_device_t *dev,
             uint32_t w, uint32_t h, int32_t format);
     
+#ifdef OMAP_ENHANCEMENT
+     /* Overloaded function for S3D Overlay creation.  Used to load V4L2_S3D driver*/
+    overlay_t* (*createOverlay_S3D)(struct overlay_control_device_t *dev,
+            uint32_t w, uint32_t h, int32_t format, int isS3D);
+#endif
     /* destroys an overlay. This call releases all
      * resources associated with overlay_t and make it invalid */
     void (*destroyOverlay)(struct overlay_control_device_t *dev,
@@ -215,7 +299,15 @@ struct overlay_data_device_t {
 
     int (*getBufferCount)(struct overlay_data_device_t *dev);
 
+#ifdef OMAP_ENHANCEMENT
+    /* For setting Stereo Parameters on-the-fly */
+   int (*set_s3d_params)(struct overlay_data_device_t *dev, uint32_t s3d_mode,
+                           uint32_t s3d_fmt, uint32_t s3d_order, uint32_t s3d_subsampling);
+#endif
+
     int (*setFd)(struct overlay_data_device_t *dev, int fd);
+
+
 };
 
 
