@@ -74,6 +74,8 @@ enum {
     OVERLAY_DITHER        = 3,
     /* transformation applied (this is a superset of COPYBIT_ROTATION_DEG) */
     OVERLAY_TRANSFORM    = 4,
+    /* enable or disable HDMI Mirroring of Video */
+    OVERLAY_HDMI_ENABLE  = 8,
 };
 
 /* enable/disable value setParameter() */
