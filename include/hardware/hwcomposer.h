@@ -258,6 +258,12 @@ typedef struct hwc_module {
     struct hw_module_t common;
 } hwc_module_t;
 
+#ifdef STE_HDMI
+enum {
+    HWC_UI_ORIENTATION = 0x00000000,
+    HWC_HW_ROTATION = 0x00000001,
+};
+#endif
 
 typedef struct hwc_composer_device {
     struct hw_device_t common;
