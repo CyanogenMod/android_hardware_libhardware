@@ -38,6 +38,9 @@ __BEGIN_DECLS
  */
 
 #define GRALLOC_HARDWARE_FB0 "fb0"
+#ifdef OMAP_ENHANCEMENT
+#define GRALLOC_HARDWARE_FB1 "fb1"
+#endif
 #define GRALLOC_HARDWARE_GPU0 "gpu0"
 
 enum {
@@ -65,11 +68,17 @@ enum {
     GRALLOC_USAGE_HW_RENDER       = 0x00000200,
     /* buffer will be used by the 2D hardware blitter */
     GRALLOC_USAGE_HW_2D           = 0x00000400,
-    /* buffer will be used with the framebuffer device */
+    /* buffer will be used with the framebuffer device 0 */
     GRALLOC_USAGE_HW_FB           = 0x00001000,
+#ifdef OMAP_ENHANCEMENT
+    /* buffer will be used with the framebuffer device 1 */
+    GRALLOC_USAGE_HW_FB1           = 0x00002000,
+    /* mask for the software usage bit-mask */
+    GRALLOC_USAGE_HW_MASK         = 0x00003F00,
+#else
     /* mask for the software usage bit-mask */
     GRALLOC_USAGE_HW_MASK         = 0x00001F00,
-
+#endif
     /* implementation-specific private usage flags */
     GRALLOC_USAGE_PRIVATE_0       = 0x10000000,
     GRALLOC_USAGE_PRIVATE_1       = 0x20000000,
@@ -340,6 +349,14 @@ static inline int framebuffer_open(const struct hw_module_t* module,
     return module->methods->open(module, 
             GRALLOC_HARDWARE_FB0, (struct hw_device_t**)device);
 }
+
+#ifdef OMAP_ENHANCEMENT
+static inline int framebuffer_open_by_name(const struct hw_module_t* module,
+        struct framebuffer_device_t** device, const char *fb_name) {
+    return module->methods->open(module,
+            fb_name, (struct hw_device_t**)device);
+}
+#endif
 
 static inline int framebuffer_close(struct framebuffer_device_t* device) {
     return device->common.close(&device->common);
