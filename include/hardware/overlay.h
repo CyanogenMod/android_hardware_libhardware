@@ -261,6 +261,11 @@ struct overlay_control_device_t {
 
     int (*stage)(struct overlay_control_device_t *dev, overlay_t* overlay);
     int (*commit)(struct overlay_control_device_t *dev, overlay_t* overlay);
+
+#ifdef OMAP_ENHANCEMENT
+    int (*requestOverlayClone)(struct overlay_control_device_t* dev, overlay_t* overlay,int enable);
+#endif
+
 };
 
 
