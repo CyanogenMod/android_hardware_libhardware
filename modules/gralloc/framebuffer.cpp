@@ -177,19 +177,6 @@ int mapFrameBufferLocked(struct private_module_t* module)
     info.activate = FB_ACTIVATE_NOW;
 
     /*
-     * Explicitly request 5/6/5
-     */
-    info.bits_per_pixel = 16;
-    info.red.offset     = 11;
-    info.red.length     = 5;
-    info.green.offset   = 5;
-    info.green.length   = 6;
-    info.blue.offset    = 0;
-    info.blue.length    = 5;
-    info.transp.offset  = 0;
-    info.transp.length  = 0;
-
-    /*
      * Request NUM_BUFFERS screens (at lest 2 for page flipping)
      */
     info.yres_virtual = info.yres * NUM_BUFFERS;
@@ -213,12 +200,16 @@ int mapFrameBufferLocked(struct private_module_t* module)
     if (ioctl(fd, FBIOGET_VSCREENINFO, &info) == -1)
         return -errno;
 
-    int refreshRate = 1000000000000000LLU /
+    uint64_t  refreshQuotient =
     (
             uint64_t( info.upper_margin + info.lower_margin + info.yres )
             * ( info.left_margin  + info.right_margin + info.xres )
             * info.pixclock
     );
+
+    /* Beware, info.pixclock might be 0 under emulation, so avoid a
+     * division-by-0 here (SIGFPE on ARM) */
+    int refreshRate = refreshQuotient > 0 ? (int)(1000000000000000LLU / refreshQuotient) : 0;
 
     if (refreshRate == 0) {
         // bleagh, bad info from the driver
@@ -348,11 +339,14 @@ int fb_device_open(hw_module_t const* module, const char* name,
         status = mapFrameBuffer(m);
         if (status >= 0) {
             int stride = m->finfo.line_length / (m->info.bits_per_pixel >> 3);
+            int format = (m->info.bits_per_pixel == 32)
+                         ? HAL_PIXEL_FORMAT_RGBX_8888
+                         : HAL_PIXEL_FORMAT_RGB_565;
             const_cast<uint32_t&>(dev->device.flags) = 0;
             const_cast<uint32_t&>(dev->device.width) = m->info.xres;
             const_cast<uint32_t&>(dev->device.height) = m->info.yres;
             const_cast<int&>(dev->device.stride) = stride;
-            const_cast<int&>(dev->device.format) = HAL_PIXEL_FORMAT_RGB_565;
+            const_cast<int&>(dev->device.format) = format;
             const_cast<float&>(dev->device.xdpi) = m->xdpi;
             const_cast<float&>(dev->device.ydpi) = m->ydpi;
             const_cast<float&>(dev->device.fps) = m->fps;
