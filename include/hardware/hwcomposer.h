@@ -80,6 +80,12 @@ enum {
      * by SurfaceFlinger (just as if compositionType was set to HWC_OVERLAY).
      */
     HWC_SKIP_LAYER = 0x00000001,
+
+    /* implementation-specific private usage flags */
+    HWC_FLAGS_PRIVATE_0       = 0x10000000,
+    HWC_FLAGS_PRIVATE_1       = 0x20000000,
+    HWC_FLAGS_PRIVATE_2       = 0x40000000,
+    HWC_FLAGS_PRIVATE_3       = 0x80000000,
 };
 
 /*
