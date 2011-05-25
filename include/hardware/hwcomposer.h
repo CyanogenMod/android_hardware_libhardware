@@ -166,6 +166,9 @@ typedef struct hwc_layer {
     /* blending to apply during composition */
     int32_t blending;
 
+    /* alpha value of the layer */
+    int32_t alpha;
+
     /* area of the source to consider, the origin is the top-left corner of
      * the buffer */
     hwc_rect_t sourceCrop;
