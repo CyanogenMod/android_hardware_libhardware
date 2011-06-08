@@ -79,7 +79,13 @@ enum {
      * shall not consider this layer for composition as it will be handled
      * by SurfaceFlinger (just as if compositionType was set to HWC_OVERLAY).
      */
-    HWC_SKIP_LAYER = 0x00000001,
+    HWC_SKIP_LAYER         = 0x00000001,
+    /*
+     * HWC_LAYER_NOT_UPDATING is set by SurfaceFlnger to indicate that the HAL
+     * that this layer is not updating. The HAL can use this to determine if it
+     * needs to draw this layer.
+     */
+    HWC_LAYER_NOT_UPDATING = 0x00000002,
 
     /* implementation-specific private usage flags */
     HWC_FLAGS_PRIVATE_0       = 0x10000000,
@@ -196,6 +202,12 @@ enum {
      * passed to (*prepare)() has changed by more than just the buffer handles.
      */
     HWC_GEOMETRY_CHANGED = 0x00000001,
+
+    /*
+     * HWC_SKIP_COMPOSITION is set by the HWC to indicate to SurfaceFlinger to
+     * skip composition for this iteration.
+     */
+    HWC_SKIP_COMPOSITION = 0x00000002
 };
 
 /*
