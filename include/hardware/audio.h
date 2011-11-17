@@ -305,6 +305,11 @@ struct audio_hw_device {
                               uint32_t *sample_rate,
                               struct audio_stream_out **out);
 
+    /** This method creates and opens the audio hardware output session */
+    int (*open_output_session)(struct audio_hw_device *dev, uint32_t devices,
+                              int *format, int sessionId,
+                              struct audio_stream_out **out);
+
     void (*close_output_stream)(struct audio_hw_device *dev,
                                 struct audio_stream_out* out);
 
