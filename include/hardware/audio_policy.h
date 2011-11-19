@@ -373,6 +373,11 @@ struct audio_policy_service_ops {
                         int session,
                         audio_io_handle_t src_output,
                         audio_io_handle_t dst_output);
+
+    /* set fm audio volume. */
+    int (*set_fm_volume)(void *service,
+                         float volume,
+                         int delay_ms);
 };
 
 /**********************************************************************/
