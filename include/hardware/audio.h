@@ -218,6 +218,9 @@ typedef struct audio_stream_in audio_stream_in_t;
 static inline uint32_t audio_stream_frame_size(struct audio_stream *s)
 {
     int chan_samp_sz;
+#if defined(QCOM_HARDWARE) && !defined(USES_AUDIO_LEGACY)
+    uint32_t chan_mask = s->get_channels(s);
+#endif
 
     switch (s->get_format(s)) {
     case AUDIO_FORMAT_PCM_16_BIT:
@@ -229,7 +232,16 @@ static inline uint32_t audio_stream_frame_size(struct audio_stream *s)
         break;
     }
 
+#if defined(QCOM_HARDWARE) && !defined(USES_AUDIO_LEGACY)
+    if (audio_is_input_channel(chan_mask)) {
+        chan_mask &= (AUDIO_CHANNEL_IN_STEREO | \
+                      AUDIO_CHANNEL_IN_MONO );
+    }
+
+    return popcount(chan_mask) * chan_samp_sz;
+#else
     return popcount(s->get_channels(s)) * chan_samp_sz;
+#endif
 }
 
 
