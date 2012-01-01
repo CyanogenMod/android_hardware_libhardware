@@ -64,7 +64,14 @@ typedef struct framebuffer_device_t {
     /* max swap interval supported by this framebuffer */
     const int       maxSwapInterval;
 
+#ifdef QCOM_HARDWARE
+    /* number of framebuffers */
+    const int       numFramebuffers;
+
+    int reserved[7];
+#else
     int reserved[8];
+#endif
 
     /*
      * requests a specific swap-interval (same definition than EGL)
@@ -126,6 +133,10 @@ typedef struct framebuffer_device_t {
 
     int (*compositionComplete)(struct framebuffer_device_t* dev);
 
+#ifdef QCOM_HARDWARE
+    int (*lockBuffer) (struct framebuffer_device_t* dev, int);
+#endif
+
     /*
      * This hook is OPTIONAL.
      *
@@ -141,7 +152,19 @@ typedef struct framebuffer_device_t {
      */
     int (*enableScreen)(struct framebuffer_device_t* dev, int enable);
 
+#ifdef QCOM_HARDWARE
+    int (*dequeueBuffer) (struct framebuffer_device_t* dev, int);
+
+    int (*orientationChanged) (struct framebuffer_device_t* dev, int);
+    int (*videoOverlayStarted) (struct framebuffer_device_t* dev, int);
+    int (*enableHDMIOutput) (struct framebuffer_device_t* dev, int);
+    int (*setActionSafeWidthRatio) (struct framebuffer_device_t* dev, float);
+    int (*setActionSafeHeightRatio) (struct framebuffer_device_t* dev, float);
+    int (*resetBufferPostStatus)(struct framebuffer_device_t* dev);
+    int (*waitForBufferPost) (struct framebuffer_device_t* dev);
+#else
     void* reserved_proc[6];
+#endif
 
 } framebuffer_device_t;
 
