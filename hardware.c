@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <limits.h>
 
+#define LOG_NDEBUG 1
 #define LOG_TAG "HAL"
 #include <utils/Log.h>
 
@@ -89,7 +90,8 @@ static int load(const char *id,
     }
 
     /* Check that the id matches */
-    if (strcmp(id, hmi->id) != 0) {
+    if (strcmp(id, hmi->id) != 0 &&
+        (strncmp(id, "vendor-", 7) != 0 || strcmp(id + 7, hmi->id) != 0)) {
         LOGE("load: id=%s != hmi->id=%s", id, hmi->id);
         status = -EINVAL;
         goto done;
