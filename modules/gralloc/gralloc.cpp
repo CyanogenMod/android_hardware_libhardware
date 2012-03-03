@@ -69,6 +69,15 @@ extern int gralloc_register_buffer(gralloc_module_t const* module,
 extern int gralloc_unregister_buffer(gralloc_module_t const* module,
         buffer_handle_t handle);
 
+#ifdef EXYNOS4210_ENHANCEMENTS
+extern int gralloc_getphys(gralloc_module_t const* module,
+        buffer_handle_t handle, int *paddr) {
+        /* unknown implementation
+           returning 0 works somehow */
+        return 0;
+}
+#endif
+
 /*****************************************************************************/
 
 static struct hw_module_methods_t gralloc_module_methods = {
@@ -90,6 +99,9 @@ struct private_module_t HAL_MODULE_INFO_SYM = {
         unregisterBuffer: gralloc_unregister_buffer,
         lock: gralloc_lock,
         unlock: gralloc_unlock,
+#ifdef EXYNOS4210_ENHANCEMENTS
+        getphys: gralloc_getphys,
+#endif
     },
     framebuffer: 0,
     flags: 0,

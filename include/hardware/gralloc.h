@@ -150,7 +150,7 @@ typedef struct gralloc_module_t {
      */
     int (*unregisterBuffer)(struct gralloc_module_t const* module,
             buffer_handle_t handle);
-    
+
     /*
      * The (*lock)() method is called before a buffer is accessed for the 
      * specified usage. This call may block, for instance if the h/w needs
@@ -187,7 +187,6 @@ typedef struct gralloc_module_t {
             int l, int t, int w, int h,
             void** vaddr);
 
-    
     /*
      * The (*unlock)() method must be called after all changes to the buffer
      * are completed.
@@ -196,6 +195,14 @@ typedef struct gralloc_module_t {
     int (*unlock)(struct gralloc_module_t const* module,
             buffer_handle_t handle);
 
+#ifdef EXYNOS4210_ENHANCEMENTS
+    /*
+     * Unknown, used for samsung omx plugins
+     */
+
+    int (*getphys) (struct gralloc_module_t const* module,
+            buffer_handle_t handle, int *paddr);
+#endif
 
     /* reserved for future use */
     int (*perform)(struct gralloc_module_t const* module,
