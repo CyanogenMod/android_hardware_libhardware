@@ -155,11 +155,14 @@ typedef struct framebuffer_device_t {
 #ifdef QCOM_HARDWARE
     int (*dequeueBuffer) (struct framebuffer_device_t* dev, int);
 
-    int (*orientationChanged) (struct framebuffer_device_t* dev, int);
-    int (*videoOverlayStarted) (struct framebuffer_device_t* dev, int);
-    int (*enableHDMIOutput) (struct framebuffer_device_t* dev, int);
-    int (*setActionSafeWidthRatio) (struct framebuffer_device_t* dev, float);
-    int (*setActionSafeHeightRatio) (struct framebuffer_device_t* dev, float);
+    /*
+     * (*perform)() is used to inform custom event to fb device
+     * event - Type of event
+     * val1 - associated with event
+     * val2 - additional value(if any) associated with event
+     */
+    int (*perform) (struct framebuffer_device_t* dev, int event, int value);
+
 #else
     void* reserved_proc[6];
 #endif
