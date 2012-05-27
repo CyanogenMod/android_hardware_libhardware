@@ -1,0 +1,10 @@
+Change-Id: Ic003f5c508f23a53c7802a8b10aff942a5b50c56
+Code-Review+2: Steve Kondik <shade@chemlab.org>
+Verified+1: Steve Kondik <shade@chemlab.org>
+Code-Review+1: David Ferguson <ferguson.david@gmail.com>
+Code-Review+1: Jeffrey Clark <dude@zaplabs.com>
+Submitted-by: Steve Kondik <shade@chemlab.org>
+Submitted-at: Sun, 27 May 2012 13:00:10 +0400
+Reviewed-on: http://review.cyanogenmod.com/16566
+Project: CyanogenMod/android_hardware_libhardware
+Branch: refs/heads/ics
