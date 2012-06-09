@@ -195,7 +195,7 @@ typedef struct gralloc_module_t {
     int (*unlock)(struct gralloc_module_t const* module,
             buffer_handle_t handle);
 
-#ifdef EXYNOS4210_ENHANCEMENTS
+#if (defined(EXYNOS4210_ENHANCEMENTS) && !defined(EXYNOS4X12_ENHANCEMENTS))
     int (*getphys) (struct gralloc_module_t const* module,
             buffer_handle_t handle, void** paddr);
 #endif

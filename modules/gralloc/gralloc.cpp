@@ -69,7 +69,7 @@ extern int gralloc_register_buffer(gralloc_module_t const* module,
 extern int gralloc_unregister_buffer(gralloc_module_t const* module,
         buffer_handle_t handle);
 
-#ifdef EXYNOS4210_ENHANCEMENTS
+#if (defined(EXYNOS4210_ENHANCEMENTS) && !defined(EXYNOS4X12_ENHANCEMENTS))
 static int gralloc_getphys(gralloc_module_t const* module, buffer_handle_t handle, void** paddr)
 {
     /*
