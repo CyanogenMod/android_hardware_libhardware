@@ -378,7 +378,7 @@ struct audio_policy_service_ops {
                         audio_io_handle_t src_output,
                         audio_io_handle_t dst_output);
 
-#ifdef QCOM_HARDWARE
+#if defined(QCOM_HARDWARE) && defined(HAVE_FM_RADIO) && !defined(USES_LEGACY_AUDIO)
     /* set fm audio volume. */
     int (*set_fm_volume)(void *service,
                          float volume,
