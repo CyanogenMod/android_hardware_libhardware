@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
+ * Copyright (c) 2012, Code Aurora Forum. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -397,6 +398,13 @@ struct audio_policy_service_ops {
                         int session,
                         audio_io_handle_t src_output,
                         audio_io_handle_t dst_output);
+
+#ifdef QCOM_FM_ENABLED
+    /* set fm audio volume. */
+    int (*set_fm_volume)(void *service,
+                         float volume,
+                         int delay_ms);
+#endif
 
     /* loads an audio hw module.
      *

@@ -360,6 +360,11 @@ struct audio_hw_device {
     int (*get_master_volume)(struct audio_hw_device *dev, float *volume);
 #endif
 
+#ifdef QCOM_FM_ENABLED
+    /** set the fm audio volume. Range is between 0.0 and 1.0 */
+    int (*set_fm_volume)(struct audio_hw_device *dev, float volume);
+#endif
+
     /**
      * set_mode is called when the audio mode changes. AUDIO_MODE_NORMAL mode
      * is for standard audio playback, AUDIO_MODE_RINGTONE when a ringtone is
