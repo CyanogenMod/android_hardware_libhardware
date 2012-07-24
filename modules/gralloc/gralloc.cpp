@@ -69,6 +69,19 @@ extern int gralloc_register_buffer(gralloc_module_t const* module,
 extern int gralloc_unregister_buffer(gralloc_module_t const* module,
         buffer_handle_t handle);
 
+#ifdef EXYNOS4210_ENHANCEMENTS
+static int gralloc_getphys(gralloc_module_t const* module, buffer_handle_t handle, void** paddr)
+{
+    /*
+    private_handle_t* hnd = (private_handle_t*)handle;
+    paddr[0] = (void*)hnd->paddr;
+    paddr[1] = (void*)(hnd->paddr + hnd->uoffset);
+    paddr[2] = (void*)(hnd->paddr + hnd->uoffset + hnd->voffset);
+    */
+    return 0;
+}
+#endif
+
 /*****************************************************************************/
 
 static struct hw_module_methods_t gralloc_module_methods = {
