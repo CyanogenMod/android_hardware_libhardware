@@ -64,7 +64,14 @@ typedef struct framebuffer_device_t {
     /* max swap interval supported by this framebuffer */
     const int       maxSwapInterval;
 
+#ifdef QCOM_HARDWARE
+    /* Number of framebuffers supported*/
+    const int       numFramebuffers;
+
+    int reserved[7];
+#else
     int reserved[8];
+#endif
 
     /*
      * requests a specific swap-interval (same definition than EGL)
