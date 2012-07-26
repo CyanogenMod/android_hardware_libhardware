@@ -408,11 +408,17 @@ struct audio_hw_device {
                               struct audio_stream_out **out);
 #endif
 
-#ifdef QCOM_ICS_LPA_COMPAT
+#ifdef QCOM_TUNNEL_LPA_ENABLED
     /** This method creates and opens the audio hardware output session */
-    int (*open_output_session)(struct audio_hw_device *dev, uint32_t devices,
-                              int *format, int sessionId,
-                              struct audio_stream_out **out);
+    int (*open_output_session)(struct audio_hw_device *dev,
+                                 uint32_t devices,
+                                 int *format,
+                                 int sessionId,
+#ifndef QCOM_ICS_LPA_COMPAT
+                                 uint32_t samplingRate,
+                                 uint32_t channels,
+#endif
+                                 struct audio_stream_out **stream_out);
 #endif
 
     void (*close_output_stream)(struct audio_hw_device *dev,
