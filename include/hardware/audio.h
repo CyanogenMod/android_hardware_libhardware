@@ -294,7 +294,12 @@ struct audio_stream_out {
                                     int64_t *timestamp);
 #ifdef QCOM_HARDWARE
     /**
-    * EOS notification from HAL to Flinger
+    * return the current timestamp after quering to the driver
+     */
+    int (*get_time_stamp)(const struct audio_stream_out *stream,
+                               uint64_t *time_stamp);
+    /**
+    * EOS notification from HAL to Player
      */
     int (*set_observer)(const struct audio_stream_out *stream,
                                void *observer);
@@ -303,6 +308,45 @@ struct audio_stream_out {
 
 };
 typedef struct audio_stream_out audio_stream_out_t;
+
+#ifdef QCOM_HARDWARE
+/**
+ * audio_broadcast_stream is the abstraction interface for the
+ * audio output hardware.
+ *
+ * It provides information about various properties of the audio output
+ * hardware driver.
+ */
+
+struct audio_broadcast_stream {
+    struct audio_stream common;
+
+    /**
+     * return the audio hardware driver latency in milli seconds.
+     */
+    uint32_t (*get_latency)(const struct audio_broadcast_stream *stream);
+
+    /**
+     * Use this method in situations where audio mixing is done in the
+     * hardware. This method serves as a direct interface with hardware,
+     * allowing you to directly set the volume as apposed to via the framework.
+     * This method might produce multiple PCM outputs or hardware accelerated
+     * codecs, such as MP3 or AAC.
+     */
+    int (*set_volume)(struct audio_broadcast_stream *stream, float left, float right);
+
+    int (*mute)(struct audio_broadcast_stream *stream, bool mute);
+
+    int (*start)(struct audio_broadcast_stream *stream, int64_t absTimeToStart);
+    /**
+     * write audio buffer to driver. Returns number of bytes written
+     */
+    ssize_t (*write)(struct audio_broadcast_stream *stream, const void* buffer,
+                     size_t bytes, int64_t timestamp, int audioType);
+
+};
+typedef struct audio_broadcast_stream audio_broadcast_stream_t;
+#endif
 
 struct audio_stream_in {
     struct audio_stream common;
@@ -497,6 +541,19 @@ struct audio_hw_device {
 
     void (*close_output_stream)(struct audio_hw_device *dev,
                                 struct audio_stream_out* stream_out);
+
+#ifdef QCOM_HARDWARE
+    /** This method creates and opens the audio hardware output
+     *  for broadcast stream */
+    int (*open_broadcast_stream)(struct audio_hw_device *dev, uint32_t devices,
+                                 int format, uint32_t channels,
+                                 uint32_t sample_rate,
+                                 uint32_t audio_source,
+                                 struct audio_broadcast_stream **out);
+
+    void (*close_broadcast_stream)(struct audio_hw_device *dev,
+                                   struct audio_broadcast_stream *out);
+#endif
 
     /** This method creates and opens the audio hardware input stream */
 #ifndef ICS_AUDIO_BLOB

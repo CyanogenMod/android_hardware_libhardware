@@ -33,7 +33,21 @@ __BEGIN_DECLS
 
 #define HARDWARE_MODULE_TAG MAKE_TAG_CONSTANT('H', 'W', 'M', 'T')
 #define HARDWARE_DEVICE_TAG MAKE_TAG_CONSTANT('H', 'W', 'D', 'T')
-
+#ifdef QCOM_HARDWARE
+#define IS_TARGET_MPQ(status) \
+{ \
+    int id = 0; \
+    FILE *fp; \
+    if ((fp = fopen("/sys/devices/system/soc/soc0/id", "r")) != NULL) { \
+        fscanf(fp, "%d", &id); \
+        fclose(fp); \
+    } \
+    if (id == 130) \
+        status = 1; \
+    else \
+        status = 0;\
+}
+#endif
 #define HARDWARE_MAKE_API_VERSION(maj,min) \
             ((((maj) & 0xff) << 8) | ((min) & 0xff))
 
