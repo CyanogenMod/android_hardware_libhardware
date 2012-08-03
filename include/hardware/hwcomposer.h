@@ -62,7 +62,7 @@ typedef struct hwc_methods {
      *************************************************************************/
 
     /*
-     * eventControl(..., event, enabled)
+     * eventControl(..., event, value)
      * Enables or disables h/w composer events.
      *
      * eventControl can be called from any thread and takes effect
@@ -70,13 +70,16 @@ typedef struct hwc_methods {
      *
      *  Supported events are:
      *      HWC_EVENT_VSYNC
+     *      HWC_EVENT_ORIENTATION
      *
      * returns -EINVAL if the "event" parameter is not one of the value above
-     * or if the "enabled" parameter is not 0 or 1.
+     * or if the "value" parameter is not 0 or 1 for HWC_EVENT_VSYNC.
+     * and if the "value" parameter is not going to be just 0 or 1 for
+     * HWC_EVENT_ORIENTATION
      */
 
     int (*eventControl)(
-            struct hwc_composer_device* dev, int event, int enabled);
+            struct hwc_composer_device* dev, int event, int value);
 
 } hwc_methods_t;
 
