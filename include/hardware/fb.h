@@ -42,18 +42,32 @@ typedef struct framebuffer_device_t {
     const uint32_t  flags;
 
     /* dimensions of the framebuffer in pixels */
+#ifdef STE_HARDWARE
+    uint32_t  width;
+    uint32_t  height;
+#else
     const uint32_t  width;
     const uint32_t  height;
+#endif
 
     /* frambuffer stride in pixels */
+#ifdef STE_HARDWARE
+    int       stride;
+#else
     const int       stride;
+#endif
 
     /* framebuffer pixel format */
     const int       format;
 
     /* resolution of the framebuffer's display panel in pixel per inch*/
+#ifdef STE_HARDWARE
+    float     xdpi;
+    float     ydpi;
+#else
     const float     xdpi;
     const float     ydpi;
+#endif
 
     /* framebuffer's display panel refresh rate in frames per second */
     const float     fps;
@@ -147,6 +161,27 @@ typedef struct framebuffer_device_t {
      * Returns 0 on success or -errno on error.
      */
     int (*enableScreen)(struct framebuffer_device_t* dev, int enable);
+
+#ifdef STE_HARDWARE
+    /*
+     * Sets the number of degrees ccw the framebuffer shall be rotated before
+     * being sent to the display. This call may change the framebuffer's
+     * dimensions.
+     */
+    int (*rotate)(struct framebuffer_device_t* dev, unsigned int absolute_degree);
+
+    /*
+     * Informs gralloc about the UI rotation. This is needed in the mirroring use
+     * case to get the correct orientation on the external device, e.g. HDMI.
+     */
+    void (*UIRotationChange)(struct framebuffer_device_t* dev, int uiRotation);
+
+    /*
+     * Enables the mirroring of the main display content to an external device,
+     * e.g. HDMI.
+     */
+    void (*enableHDMIMirroring)(struct framebuffer_device_t* dev, int enable);
+#endif
 
     void* reserved_proc[6];
 
