@@ -41,6 +41,7 @@ __BEGIN_DECLS
 typedef enum {
     POWER_HINT_VSYNC = 0x00000001,
     POWER_HINT_INTERACTION = 0x00000002,
+    POWER_HINT_VIDEO_ENCODE = 0x00000003,
 } power_hint_t;
 
 /**
@@ -107,6 +108,17 @@ typedef struct power_module {
      *     events are incoming.  CPU and GPU load may be expected soon,
      *     and it may be appropriate to raise speeds of CPU, memory bus,
      *     etc.  The data parameter is unused.
+     *
+     * POWER_HINT_VIDEO_ENCODE
+     *
+     *     The user just started or stopped recording video. When encode
+     *     begins, large writes to the SD card will be done and this may
+     *     cause CPU frequency to increase. The data parameter is a string
+     *     with semicolon-separated 'key:value' pairs. The most common key is
+     *     'state', which takes 0 or 1 as its value. For instance, To
+     *     indicate that recording is beginning, the string "state:1" would
+     *     need to be used. More keys can be provided depending on the data
+     *     that is to be passed.
      *
      * A particular platform may choose to ignore any hint.
      *
