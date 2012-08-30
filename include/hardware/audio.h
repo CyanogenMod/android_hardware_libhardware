@@ -263,7 +263,6 @@ struct audio_stream_out {
     int (*get_render_position)(const struct audio_stream_out *stream,
                                uint32_t *dsp_frames);
 
-#ifndef ICS_AUDIO_BLOB
 #ifdef QCOM_HARDWARE
     /**
      * start audio data rendering
@@ -303,7 +302,6 @@ struct audio_stream_out {
      */
     int (*set_observer)(const struct audio_stream_out *stream,
                                void *observer);
-#endif
 #endif
 
 };
