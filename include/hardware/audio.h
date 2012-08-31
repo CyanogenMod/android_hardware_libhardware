@@ -129,6 +129,8 @@ __BEGIN_DECLS
 /* Query if surround sound recording is supported */
 #define AUDIO_PARAMETER_KEY_SSR "ssr"
 
+/* Query if a2dp  is supported */
+#define AUDIO_PARAMETER_KEY_HANDLE_A2DP_DEVICE "isA2dpDeviceSupported"
 /**************************************/
 
 /* common audio stream configuration parameters */
