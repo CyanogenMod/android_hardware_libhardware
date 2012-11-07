@@ -316,6 +316,19 @@ typedef struct gralloc_module_t {
 typedef struct alloc_device_t {
     struct hw_device_t common;
 
+    /*
+     * (*allocSize)() Allocates a buffer in graphic memory with the requested
+     * bufferSize parameter and returns a buffer_handle_t and the stride in
+     * pixels to allow the implementation to satisfy hardware constraints on
+     * the width of a pixmap (eg: it may have to be multiple of 8 pixels).
+     * The CALLER TAKES OWNERSHIP of the buffer_handle_t.
+     *
+     * Returns 0 on success or -errno on error.
+     */
+    int (*allocSize)(struct alloc_device_t* dev,
+            int w, int h, int format, int usage,
+            buffer_handle_t* handle, int* stride, int bufferSize);
+
     /* 
      * (*alloc)() Allocates a buffer in graphic memory with the requested
      * parameters and returns a buffer_handle_t and the stride in pixels to
