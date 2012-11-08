@@ -121,6 +121,11 @@ enum {
 #endif
 };
 
+enum {
+    /* Gralloc perform enums */
+    GRALLOC_MODULE_PERFORM_UPDATE_BUFFER_GEOMETRY = 0,
+    GRALLOC_MODULE_PERFORM_PRIVATE_START
+};
 /*****************************************************************************/
 
 /**
