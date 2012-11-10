@@ -42,10 +42,28 @@ __BEGIN_DECLS
 /*****************************************************************************/
 
 /* possible overlay formats */
+#ifdef STE_ENHANCEMENT
+enum overlay_fmt {
+#else
 enum {
+#endif
     OVERLAY_FORMAT_RGBA_8888    = HAL_PIXEL_FORMAT_RGBA_8888,
     OVERLAY_FORMAT_RGB_565      = HAL_PIXEL_FORMAT_RGB_565,
     OVERLAY_FORMAT_BGRA_8888    = HAL_PIXEL_FORMAT_BGRA_8888,
+#ifdef STE_ENHANCEMENT
+	OVERLAY_FORMAT_YCbCr_422_SP = HAL_PIXEL_FORMAT_YCbCr_422_SP,
+    OVERLAY_FORMAT_YCbCr_420_SP = HAL_PIXEL_FORMAT_YCbCr_420_SP,
+    /* STE: Added Support for YUV42XMBN, required for Copybit CC acceleration */
+    OVERLAY_FORMAT_YCBCR42XMBN = HAL_PIXEL_FORMAT_YCBCR42XMBN,
+    OVERLAY_FORMAT_YCbYCr_422_I = HAL_PIXEL_FORMAT_YCbCr_422_I,
+    OVERLAY_FORMAT_YCbYCr_420_I = HAL_PIXEL_FORMAT_YCbCr_420_I,
+    OVERLAY_FORMAT_YCrCb_422_SP = HAL_PIXEL_FORMAT_YCrCb_422_SP,
+    OVERLAY_FORMAT_YCrCb_420_SP = HAL_PIXEL_FORMAT_YCrCb_420_SP,
+    OVERLAY_FORMAT_YCrCb_422_P = HAL_PIXEL_FORMAT_YCrCb_422_P,
+    OVERLAY_FORMAT_YCrCb_420_P = HAL_PIXEL_FORMAT_YCrCb_420_P,
+    OVERLAY_FORMAT_CbYCrY_422_I = HAL_PIXEL_FORMAT_CbYCrY_422_I,
+    OVERLAY_FORMAT_CbYCrY_420_I = HAL_PIXEL_FORMAT_CbYCrY_420_I,
+#else
     OVERLAY_FORMAT_YCbYCr_422_I = 0x14,
     OVERLAY_FORMAT_CbYCrY_422_I = 0x16,
 #ifdef OMAP_ENHANCEMENT
@@ -55,6 +73,7 @@ enum {
     OVERLAY_FORMAT_YCbYCr_420_I = HAL_PIXEL_FORMAT_YCbCr_420_I,
     //NV12 Interlaced (Sequential Top-Bottom)
     OVERLAY_FORMAT_YCbCr_420_SP_SEQ_TB = HAL_PIXEL_FORMAT_YCbCr_420_SP_SEQ_TB,
+#endif
 #endif
     OVERLAY_FORMAT_DEFAULT      = 99    // The actual color format is determined
                                         // by the overlay
@@ -203,6 +222,26 @@ typedef struct overlay_t {
 
 typedef void* overlay_buffer_t;
 
+#ifdef STE_ENHANCEMENT
+enum overlay_buf_type {
+    /* Use hwmem_buf_name and offset to determine buffer location. */
+    OVERLAY_HWMEM_BUF_NAME_OFFSET,
+    /* Use fd and offset to determine buffer location. */
+    OVERLAY_FD_OFFSET
+};
+
+typedef struct overlay_ext_buf {
+    enum overlay_buf_type type;
+    int32_t fd;
+    uint32_t offset;
+    int32_t hwmem_buf_name;
+    uint32_t width;
+    uint32_t height;
+    uint32_t len;
+    enum overlay_fmt format;
+} overlay_external_buf_t;
+#endif
+
 /*****************************************************************************/
 
 /**
@@ -308,6 +347,11 @@ struct overlay_data_device_t {
     /* For setting Stereo Parameters on-the-fly */
    int (*set_s3d_params)(struct overlay_data_device_t *dev, uint32_t s3d_mode,
                            uint32_t s3d_fmt, uint32_t s3d_order, uint32_t s3d_subsampling);
+#endif
+
+#ifdef STE_ENHANCEMENT
+	int (*postExternalBuffer)(struct overlay_data_device_t *dev, 
+			overlay_external_buf_t* buf);
 #endif
 
     int (*setFd)(struct overlay_data_device_t *dev, int fd);
