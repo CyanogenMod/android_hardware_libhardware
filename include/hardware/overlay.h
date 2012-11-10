@@ -203,6 +203,26 @@ typedef struct overlay_t {
 
 typedef void* overlay_buffer_t;
 
+#ifdef STE_ENHANCEMENT
+enum overlay_buf_type {
+    /* Use hwmem_buf_name and offset to determine buffer location. */
+    OVERLAY_HWMEM_BUF_NAME_OFFSET,
+    /* Use fd and offset to determine buffer location. */
+    OVERLAY_FD_OFFSET
+};
+
+typedef struct overlay_ext_buf {
+    enum overlay_buf_type type;
+    int32_t fd;
+    uint32_t offset;
+    int32_t hwmem_buf_name;
+    uint32_t width;
+    uint32_t height;
+    uint32_t len;
+    enum overlay_fmt format;
+} overlay_external_buf_t;
+#endif
+
 /*****************************************************************************/
 
 /**
@@ -308,6 +328,11 @@ struct overlay_data_device_t {
     /* For setting Stereo Parameters on-the-fly */
    int (*set_s3d_params)(struct overlay_data_device_t *dev, uint32_t s3d_mode,
                            uint32_t s3d_fmt, uint32_t s3d_order, uint32_t s3d_subsampling);
+#endif
+
+#ifdef STE_ENHANCEMENT
+	int (*postExternalBuffer)(struct overlay_data_device_t *dev, 
+			overlay_external_buf_t* buf);
 #endif
 
     int (*setFd)(struct overlay_data_device_t *dev, int fd);
