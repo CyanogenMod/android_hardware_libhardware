@@ -310,6 +310,11 @@ struct overlay_data_device_t {
                            uint32_t s3d_fmt, uint32_t s3d_order, uint32_t s3d_subsampling);
 #endif
 
+#ifdef STE_ENHANCEMENT
+	int (*postExternalBuffer)(struct overlay_data_device_t *dev, 
+			overlay_external_buf_t* buf);
+#endif
+
     int (*setFd)(struct overlay_data_device_t *dev, int fd);
 
 
