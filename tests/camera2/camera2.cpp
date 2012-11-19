@@ -14,10 +14,22 @@
  * limitations under the License.
  */
 
-#include <system/camera_metadata.h>
-#include <hardware/camera2.h>
+#define LOG_TAG "Camera2_test"
+#define LOG_NDEBUG 0
+
+#include <utils/Log.h>
 #include <gtest/gtest.h>
 #include <iostream>
+#include <fstream>
+
+#include <utils/Vector.h>
+#include <gui/CpuConsumer.h>
+#include <ui/PixelFormat.h>
+#include <system/camera_metadata.h>
+
+#include "camera2_utils.h"
+
+namespace android {
 
 class Camera2Test: public testing::Test {
   public:
@@ -33,12 +45,16 @@ class Camera2Test: public testing::Test {
         ASSERT_TRUE(NULL != module)
                 << "No camera module was set by hw_get_module";
 
-        std::cout << "  Camera module name: " << module->name << std::endl;
-        std::cout << "  Camera module author: " << module->author << std::endl;
-        std::cout << "  Camera module API version: 0x" << std::hex
-                  << module->module_api_version << std::endl;
-        std::cout << "  Camera module HAL API version: 0x" << std::hex
-                  << module->hal_api_version << std::endl;
+        IF_ALOGV() {
+            std::cout << "  Camera module name: "
+                    << module->name << std::endl;
+            std::cout << "  Camera module author: "
+                    << module->author << std::endl;
+            std::cout << "  Camera module API version: 0x" << std::hex
+                    << module->module_api_version << std::endl;
+            std::cout << "  Camera module HAL API version: 0x" << std::hex
+                    << module->hal_api_version << std::endl;
+        }
 
         int16_t version2_0 = CAMERA_MODULE_API_VERSION_2_0;
         ASSERT_EQ(version2_0, module->module_api_version)
@@ -52,7 +68,10 @@ class Camera2Test: public testing::Test {
         sNumCameras = sCameraModule->get_number_of_cameras();
         ASSERT_LT(0, sNumCameras) << "No camera devices available!";
 
-        std::cout << "  Camera device count: " << sNumCameras << std::endl;
+        IF_ALOGV() {
+            std::cout << "  Camera device count: " << sNumCameras << std::endl;
+        }
+
         sCameraSupportsHal2 = new bool[sNumCameras];
 
         for (int i = 0; i < sNumCameras; i++) {
@@ -60,19 +79,24 @@ class Camera2Test: public testing::Test {
             res = sCameraModule->get_camera_info(i, &info);
             ASSERT_EQ(0, res)
                     << "Failure getting camera info for camera " << i;
-            std::cout << "  Camera device: " << std::dec
-                      << i << std::endl;;
-            std::cout << "    Facing: " << std::dec
-                      << info.facing  << std::endl;
-            std::cout << "    Orientation: " << std::dec
-                      << info.orientation  << std::endl;
-            std::cout << "    Version: 0x" << std::hex <<
-                    info.device_version  << std::endl;
+            IF_ALOGV() {
+                std::cout << "  Camera device: " << std::dec
+                          << i << std::endl;;
+                std::cout << "    Facing: " << std::dec
+                          << info.facing  << std::endl;
+                std::cout << "    Orientation: " << std::dec
+                          << info.orientation  << std::endl;
+                std::cout << "    Version: 0x" << std::hex <<
+                        info.device_version  << std::endl;
+            }
             if (info.device_version >= CAMERA_DEVICE_API_VERSION_2_0) {
                 sCameraSupportsHal2[i] = true;
                 ASSERT_TRUE(NULL != info.static_camera_characteristics);
-                std::cout << "    Static camera metadata:"  << std::endl;
-                dump_camera_metadata(info.static_camera_characteristics, 0, 1);
+                IF_ALOGV() {
+                    std::cout << "    Static camera metadata:"  << std::endl;
+                    dump_indented_camera_metadata(info.static_camera_characteristics,
+                            0, 1, 6);
+                }
             } else {
                 sCameraSupportsHal2[i] = false;
             }
@@ -83,13 +107,26 @@ class Camera2Test: public testing::Test {
         return sCameraModule;
     }
 
-    static const camera2_device_t *openCameraDevice(int id) {
+    static int getNumCameras() {
+        return sNumCameras;
+    }
+
+    static bool isHal2Supported(int id) {
+        return sCameraSupportsHal2[id];
+    }
+
+    static camera2_device_t *openCameraDevice(int id) {
+        ALOGV("Opening camera %d", id);
         if (NULL == sCameraSupportsHal2) return NULL;
         if (id >= sNumCameras) return NULL;
         if (!sCameraSupportsHal2[id]) return NULL;
 
         hw_device_t *device = NULL;
         const camera_module_t *cam_module = getCameraModule();
+        if (cam_module == NULL) {
+            return NULL;
+        }
+
         char camId[10];
         int res;
 
@@ -98,7 +135,7 @@ class Camera2Test: public testing::Test {
             (const hw_module_t*)cam_module,
             camId,
             &device);
-        if (res < 0 || cam_module == NULL) {
+        if (res != NO_ERROR || device == NULL) {
             return NULL;
         }
         camera2_device_t *cam_device =
@@ -106,18 +143,582 @@ class Camera2Test: public testing::Test {
         return cam_device;
     }
 
-  private:
+    static status_t configureCameraDevice(camera2_device_t *dev,
+            MetadataQueue &requestQueue,
+            MetadataQueue  &frameQueue,
+            NotifierListener &listener) {
 
+        status_t err;
+
+        err = dev->ops->set_request_queue_src_ops(dev,
+                requestQueue.getToConsumerInterface());
+        if (err != OK) return err;
+
+        requestQueue.setFromConsumerInterface(dev);
+
+        err = dev->ops->set_frame_queue_dst_ops(dev,
+                frameQueue.getToProducerInterface());
+        if (err != OK) return err;
+
+        err = listener.getNotificationsFrom(dev);
+        if (err != OK) return err;
+
+        vendor_tag_query_ops_t *vendor_metadata_tag_ops;
+        err = dev->ops->get_metadata_vendor_tag_ops(dev, &vendor_metadata_tag_ops);
+        if (err != OK) return err;
+
+        err = set_camera_metadata_vendor_tag_ops(vendor_metadata_tag_ops);
+        if (err != OK) return err;
+
+        return OK;
+    }
+
+    static status_t closeCameraDevice(camera2_device_t *cam_dev) {
+        int res;
+        ALOGV("Closing camera %p", cam_dev);
+
+        hw_device_t *dev = reinterpret_cast<hw_device_t *>(cam_dev);
+        res = dev->close(dev);
+        return res;
+    }
+
+    void setUpCamera(int id) {
+        ASSERT_GT(sNumCameras, id);
+        status_t res;
+
+        if (mDevice != NULL) {
+            closeCameraDevice(mDevice);
+        }
+        mDevice = openCameraDevice(id);
+        ASSERT_TRUE(NULL != mDevice) << "Failed to open camera device";
+
+        camera_info info;
+        res = sCameraModule->get_camera_info(id, &info);
+        ASSERT_EQ(OK, res);
+
+        mStaticInfo = info.static_camera_characteristics;
+
+        res = configureCameraDevice(mDevice,
+                mRequests,
+                mFrames,
+                mNotifications);
+        ASSERT_EQ(OK, res) << "Failure to configure camera device";
+
+    }
+
+    void setUpStream(sp<ISurfaceTexture> consumer,
+            int width, int height, int format, int *id) {
+        status_t res;
+
+        StreamAdapter* stream = new StreamAdapter(consumer);
+
+        ALOGV("Creating stream, format 0x%x, %d x %d", format, width, height);
+        res = stream->connectToDevice(mDevice, width, height, format);
+        ASSERT_EQ(NO_ERROR, res) << "Failed to connect to stream: "
+                                 << strerror(-res);
+        mStreams.push_back(stream);
+
+        *id = stream->getId();
+    }
+
+    void disconnectStream(int id) {
+        status_t res;
+        unsigned int i=0;
+        for (; i < mStreams.size(); i++) {
+            if (mStreams[i]->getId() == id) {
+                res = mStreams[i]->disconnect();
+                ASSERT_EQ(NO_ERROR, res) <<
+                        "Failed to disconnect stream " << id;
+                break;
+            }
+        }
+        ASSERT_GT(mStreams.size(), i) << "Stream id not found:" << id;
+    }
+
+    void getResolutionList(int32_t format,
+            const int32_t **list,
+            size_t *count) {
+        ALOGV("Getting resolutions for format %x", format);
+        status_t res;
+        if (format != HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
+            camera_metadata_ro_entry_t availableFormats;
+            res = find_camera_metadata_ro_entry(mStaticInfo,
+                    ANDROID_SCALER_AVAILABLE_FORMATS,
+                    &availableFormats);
+            ASSERT_EQ(OK, res);
+
+            uint32_t formatIdx;
+            for (formatIdx=0; formatIdx < availableFormats.count; formatIdx++) {
+                if (availableFormats.data.i32[formatIdx] == format) break;
+            }
+            ASSERT_NE(availableFormats.count, formatIdx)
+                << "No support found for format 0x" << std::hex << format;
+        }
+
+        camera_metadata_ro_entry_t availableSizes;
+        if (format == HAL_PIXEL_FORMAT_RAW_SENSOR) {
+            res = find_camera_metadata_ro_entry(mStaticInfo,
+                    ANDROID_SCALER_AVAILABLE_RAW_SIZES,
+                    &availableSizes);
+        } else if (format == HAL_PIXEL_FORMAT_BLOB) {
+            res = find_camera_metadata_ro_entry(mStaticInfo,
+                    ANDROID_SCALER_AVAILABLE_JPEG_SIZES,
+                    &availableSizes);
+        } else {
+            res = find_camera_metadata_ro_entry(mStaticInfo,
+                    ANDROID_SCALER_AVAILABLE_PROCESSED_SIZES,
+                    &availableSizes);
+        }
+        ASSERT_EQ(OK, res);
+
+        *list = availableSizes.data.i32;
+        *count = availableSizes.count;
+    }
+
+    virtual void SetUp() {
+        const ::testing::TestInfo* const testInfo =
+                ::testing::UnitTest::GetInstance()->current_test_info();
+
+        ALOGV("*** Starting test %s in test case %s", testInfo->name(), testInfo->test_case_name());
+        mDevice = NULL;
+    }
+
+    virtual void TearDown() {
+        for (unsigned int i = 0; i < mStreams.size(); i++) {
+            delete mStreams[i];
+        }
+        if (mDevice != NULL) {
+            closeCameraDevice(mDevice);
+        }
+    }
+
+    camera2_device    *mDevice;
+    const camera_metadata_t *mStaticInfo;
+
+    MetadataQueue    mRequests;
+    MetadataQueue    mFrames;
+    NotifierListener mNotifications;
+
+    Vector<StreamAdapter*> mStreams;
+
+  private:
     static camera_module_t *sCameraModule;
-    static int sNumCameras;
-    static bool *sCameraSupportsHal2;
+    static int              sNumCameras;
+    static bool            *sCameraSupportsHal2;
 };
 
 camera_module_t *Camera2Test::sCameraModule = NULL;
-int Camera2Test::sNumCameras = 0;
-bool *Camera2Test::sCameraSupportsHal2 = NULL;
+bool *Camera2Test::sCameraSupportsHal2      = NULL;
+int Camera2Test::sNumCameras                = 0;
+
+static const nsecs_t USEC = 1000;
+static const nsecs_t MSEC = 1000*USEC;
+static const nsecs_t SEC = 1000*MSEC;
 
 
-TEST_F(Camera2Test, Basic) {
-    ASSERT_TRUE(NULL != getCameraModule());
+TEST_F(Camera2Test, OpenClose) {
+    status_t res;
+
+    for (int id = 0; id < getNumCameras(); id++) {
+        if (!isHal2Supported(id)) continue;
+
+        camera2_device_t *d = openCameraDevice(id);
+        ASSERT_TRUE(NULL != d) << "Failed to open camera device";
+
+        res = closeCameraDevice(d);
+        ASSERT_EQ(NO_ERROR, res) << "Failed to close camera device";
+    }
 }
+
+TEST_F(Camera2Test, Capture1Raw) {
+    status_t res;
+
+    for (int id = 0; id < getNumCameras(); id++) {
+        if (!isHal2Supported(id)) continue;
+
+        ASSERT_NO_FATAL_FAILURE(setUpCamera(id));
+
+        sp<CpuConsumer> rawConsumer = new CpuConsumer(1);
+        sp<FrameWaiter> rawWaiter = new FrameWaiter();
+        rawConsumer->setFrameAvailableListener(rawWaiter);
+
+        const int32_t *rawResolutions;
+        size_t   rawResolutionsCount;
+
+        int format = HAL_PIXEL_FORMAT_RAW_SENSOR;
+
+        getResolutionList(format,
+                &rawResolutions, &rawResolutionsCount);
+        ASSERT_LT((size_t)0, rawResolutionsCount);
+
+        // Pick first available raw resolution
+        int width = rawResolutions[0];
+        int height = rawResolutions[1];
+
+        int streamId;
+        ASSERT_NO_FATAL_FAILURE(
+            setUpStream(rawConsumer->getProducerInterface(),
+                    width, height, format, &streamId) );
+
+        camera_metadata_t *request;
+        request = allocate_camera_metadata(20, 2000);
+
+        uint8_t metadataMode = ANDROID_REQUEST_METADATA_FULL;
+        add_camera_metadata_entry(request,
+                ANDROID_REQUEST_METADATA_MODE,
+                (void**)&metadataMode, 1);
+        uint32_t outputStreams = streamId;
+        add_camera_metadata_entry(request,
+                ANDROID_REQUEST_OUTPUT_STREAMS,
+                (void**)&outputStreams, 1);
+
+        uint64_t exposureTime = 10*MSEC;
+        add_camera_metadata_entry(request,
+                ANDROID_SENSOR_EXPOSURE_TIME,
+                (void**)&exposureTime, 1);
+        uint64_t frameDuration = 30*MSEC;
+        add_camera_metadata_entry(request,
+                ANDROID_SENSOR_FRAME_DURATION,
+                (void**)&frameDuration, 1);
+        uint32_t sensitivity = 100;
+        add_camera_metadata_entry(request,
+                ANDROID_SENSOR_SENSITIVITY,
+                (void**)&sensitivity, 1);
+
+        uint32_t hourOfDay = 12;
+        add_camera_metadata_entry(request,
+                0x80000000, // EMULATOR_HOUROFDAY
+                &hourOfDay, 1);
+
+        IF_ALOGV() {
+            std::cout << "Input request: " << std::endl;
+            dump_indented_camera_metadata(request, 0, 1, 2);
+        }
+
+        res = mRequests.enqueue(request);
+        ASSERT_EQ(NO_ERROR, res) << "Can't enqueue request: " << strerror(-res);
+
+        res = mFrames.waitForBuffer(exposureTime + SEC);
+        ASSERT_EQ(NO_ERROR, res) << "No frame to get: " << strerror(-res);
+
+        camera_metadata_t *frame;
+        res = mFrames.dequeue(&frame);
+        ASSERT_EQ(NO_ERROR, res);
+        ASSERT_TRUE(frame != NULL);
+
+        IF_ALOGV() {
+            std::cout << "Output frame:" << std::endl;
+            dump_indented_camera_metadata(frame, 0, 1, 2);
+        }
+
+        res = rawWaiter->waitForFrame(exposureTime + SEC);
+        ASSERT_EQ(NO_ERROR, res);
+
+        CpuConsumer::LockedBuffer buffer;
+        res = rawConsumer->lockNextBuffer(&buffer);
+        ASSERT_EQ(NO_ERROR, res);
+
+        IF_ALOGV() {
+            const char *dumpname =
+                    "/data/local/tmp/camera2_test-capture1raw-dump.raw";
+            ALOGV("Dumping raw buffer to %s", dumpname);
+            // Write to file
+            std::ofstream rawFile(dumpname);
+            size_t bpp = 2;
+            for (unsigned int y = 0; y < buffer.height; y++) {
+                rawFile.write(
+                        (const char *)(buffer.data + y * buffer.stride * bpp),
+                        buffer.width * bpp);
+            }
+            rawFile.close();
+        }
+
+        res = rawConsumer->unlockBuffer(buffer);
+        ASSERT_EQ(NO_ERROR, res);
+
+        ASSERT_NO_FATAL_FAILURE(disconnectStream(streamId));
+
+        res = closeCameraDevice(mDevice);
+        ASSERT_EQ(NO_ERROR, res) << "Failed to close camera device";
+
+    }
+}
+
+TEST_F(Camera2Test, CaptureBurstRaw) {
+    status_t res;
+
+    for (int id = 0; id < getNumCameras(); id++) {
+        if (!isHal2Supported(id)) continue;
+
+        ASSERT_NO_FATAL_FAILURE(setUpCamera(id));
+
+        sp<CpuConsumer> rawConsumer = new CpuConsumer(1);
+        sp<FrameWaiter> rawWaiter = new FrameWaiter();
+        rawConsumer->setFrameAvailableListener(rawWaiter);
+
+        const int32_t *rawResolutions;
+        size_t    rawResolutionsCount;
+
+        int format = HAL_PIXEL_FORMAT_RAW_SENSOR;
+
+        getResolutionList(format,
+                &rawResolutions, &rawResolutionsCount);
+        ASSERT_LT((uint32_t)0, rawResolutionsCount);
+
+        // Pick first available raw resolution
+        int width = rawResolutions[0];
+        int height = rawResolutions[1];
+
+        int streamId;
+        ASSERT_NO_FATAL_FAILURE(
+            setUpStream(rawConsumer->getProducerInterface(),
+                    width, height, format, &streamId) );
+
+        camera_metadata_t *request;
+        request = allocate_camera_metadata(20, 2000);
+
+        uint8_t metadataMode = ANDROID_REQUEST_METADATA_FULL;
+        add_camera_metadata_entry(request,
+                ANDROID_REQUEST_METADATA_MODE,
+                (void**)&metadataMode, 1);
+        uint32_t outputStreams = streamId;
+        add_camera_metadata_entry(request,
+                ANDROID_REQUEST_OUTPUT_STREAMS,
+                (void**)&outputStreams, 1);
+
+        uint64_t frameDuration = 30*MSEC;
+        add_camera_metadata_entry(request,
+                ANDROID_SENSOR_FRAME_DURATION,
+                (void**)&frameDuration, 1);
+        uint32_t sensitivity = 100;
+        add_camera_metadata_entry(request,
+                ANDROID_SENSOR_SENSITIVITY,
+                (void**)&sensitivity, 1);
+
+        uint32_t hourOfDay = 12;
+        add_camera_metadata_entry(request,
+                0x80000000, // EMULATOR_HOUROFDAY
+                &hourOfDay, 1);
+
+        IF_ALOGV() {
+            std::cout << "Input request template: " << std::endl;
+            dump_indented_camera_metadata(request, 0, 1, 2);
+        }
+
+        int numCaptures = 10;
+
+        // Enqueue numCaptures requests with increasing exposure time
+
+        uint64_t exposureTime = 100 * USEC;
+        for (int reqCount = 0; reqCount < numCaptures; reqCount++ ) {
+            camera_metadata_t *req;
+            req = allocate_camera_metadata(20, 2000);
+            append_camera_metadata(req, request);
+
+            add_camera_metadata_entry(req,
+                    ANDROID_SENSOR_EXPOSURE_TIME,
+                    (void**)&exposureTime, 1);
+            exposureTime *= 2;
+
+            res = mRequests.enqueue(req);
+            ASSERT_EQ(NO_ERROR, res) << "Can't enqueue request: "
+                    << strerror(-res);
+        }
+
+        // Get frames and image buffers one by one
+        uint64_t expectedExposureTime = 100 * USEC;
+        for (int frameCount = 0; frameCount < 10; frameCount++) {
+            res = mFrames.waitForBuffer(SEC + expectedExposureTime);
+            ASSERT_EQ(NO_ERROR, res) << "No frame to get: " << strerror(-res);
+
+            camera_metadata_t *frame;
+            res = mFrames.dequeue(&frame);
+            ASSERT_EQ(NO_ERROR, res);
+            ASSERT_TRUE(frame != NULL);
+
+            camera_metadata_entry_t frameNumber;
+            res = find_camera_metadata_entry(frame,
+                    ANDROID_REQUEST_FRAME_COUNT,
+                    &frameNumber);
+            ASSERT_EQ(NO_ERROR, res);
+            ASSERT_EQ(frameCount, *frameNumber.data.i32);
+
+            res = rawWaiter->waitForFrame(SEC + expectedExposureTime);
+            ASSERT_EQ(NO_ERROR, res) <<
+                    "Never got raw data for capture " << frameCount;
+
+            CpuConsumer::LockedBuffer buffer;
+            res = rawConsumer->lockNextBuffer(&buffer);
+            ASSERT_EQ(NO_ERROR, res);
+
+            IF_ALOGV() {
+                char dumpname[60];
+                snprintf(dumpname, 60,
+                        "/data/local/tmp/camera2_test-"
+                        "captureBurstRaw-dump_%d.raw",
+                        frameCount);
+                ALOGV("Dumping raw buffer to %s", dumpname);
+                // Write to file
+                std::ofstream rawFile(dumpname);
+                for (unsigned int y = 0; y < buffer.height; y++) {
+                    rawFile.write(
+                            (const char *)(buffer.data + y * buffer.stride * 2),
+                            buffer.width * 2);
+                }
+                rawFile.close();
+            }
+
+            res = rawConsumer->unlockBuffer(buffer);
+            ASSERT_EQ(NO_ERROR, res);
+
+            expectedExposureTime *= 2;
+        }
+    }
+}
+
+TEST_F(Camera2Test, ConstructDefaultRequests) {
+    status_t res;
+
+    for (int id = 0; id < getNumCameras(); id++) {
+        if (!isHal2Supported(id)) continue;
+
+        ASSERT_NO_FATAL_FAILURE(setUpCamera(id));
+
+        for (int i = CAMERA2_TEMPLATE_PREVIEW; i < CAMERA2_TEMPLATE_COUNT;
+             i++) {
+            camera_metadata_t *request = NULL;
+            res = mDevice->ops->construct_default_request(mDevice,
+                    i,
+                    &request);
+            EXPECT_EQ(NO_ERROR, res) <<
+                    "Unable to construct request from template type %d", i;
+            EXPECT_TRUE(request != NULL);
+            EXPECT_LT((size_t)0, get_camera_metadata_entry_count(request));
+            EXPECT_LT((size_t)0, get_camera_metadata_data_count(request));
+
+            IF_ALOGV() {
+                std::cout << "  ** Template type " << i << ":"<<std::endl;
+                dump_indented_camera_metadata(request, 0, 2, 4);
+            }
+
+            free_camera_metadata(request);
+        }
+    }
+}
+
+TEST_F(Camera2Test, Capture1Jpeg) {
+    status_t res;
+
+    for (int id = 0; id < getNumCameras(); id++) {
+        if (!isHal2Supported(id)) continue;
+
+        ASSERT_NO_FATAL_FAILURE(setUpCamera(id));
+
+        sp<CpuConsumer> jpegConsumer = new CpuConsumer(1);
+        sp<FrameWaiter> jpegWaiter = new FrameWaiter();
+        jpegConsumer->setFrameAvailableListener(jpegWaiter);
+
+        const int32_t *jpegResolutions;
+        size_t   jpegResolutionsCount;
+
+        int format = HAL_PIXEL_FORMAT_BLOB;
+
+        getResolutionList(format,
+                &jpegResolutions, &jpegResolutionsCount);
+        ASSERT_LT((size_t)0, jpegResolutionsCount);
+
+        // Pick first available JPEG resolution
+        int width = jpegResolutions[0];
+        int height = jpegResolutions[1];
+
+        int streamId;
+        ASSERT_NO_FATAL_FAILURE(
+            setUpStream(jpegConsumer->getProducerInterface(),
+                    width, height, format, &streamId) );
+
+        camera_metadata_t *request;
+        request = allocate_camera_metadata(20, 2000);
+
+        uint8_t metadataMode = ANDROID_REQUEST_METADATA_FULL;
+        add_camera_metadata_entry(request,
+                ANDROID_REQUEST_METADATA_MODE,
+                (void**)&metadataMode, 1);
+        uint32_t outputStreams = streamId;
+        add_camera_metadata_entry(request,
+                ANDROID_REQUEST_OUTPUT_STREAMS,
+                (void**)&outputStreams, 1);
+
+        uint64_t exposureTime = 10*MSEC;
+        add_camera_metadata_entry(request,
+                ANDROID_SENSOR_EXPOSURE_TIME,
+                (void**)&exposureTime, 1);
+        uint64_t frameDuration = 30*MSEC;
+        add_camera_metadata_entry(request,
+                ANDROID_SENSOR_FRAME_DURATION,
+                (void**)&frameDuration, 1);
+        uint32_t sensitivity = 100;
+        add_camera_metadata_entry(request,
+                ANDROID_SENSOR_SENSITIVITY,
+                (void**)&sensitivity, 1);
+
+        uint32_t hourOfDay = 12;
+        add_camera_metadata_entry(request,
+                0x80000000, // EMULATOR_HOUROFDAY
+                &hourOfDay, 1);
+
+        IF_ALOGV() {
+            std::cout << "Input request: " << std::endl;
+            dump_indented_camera_metadata(request, 0, 1, 4);
+        }
+
+        res = mRequests.enqueue(request);
+        ASSERT_EQ(NO_ERROR, res) << "Can't enqueue request: " << strerror(-res);
+
+        res = mFrames.waitForBuffer(exposureTime + SEC);
+        ASSERT_EQ(NO_ERROR, res) << "No frame to get: " << strerror(-res);
+
+        camera_metadata_t *frame;
+        res = mFrames.dequeue(&frame);
+        ASSERT_EQ(NO_ERROR, res);
+        ASSERT_TRUE(frame != NULL);
+
+        IF_ALOGV() {
+            std::cout << "Output frame:" << std::endl;
+            dump_indented_camera_metadata(frame, 0, 1, 4);
+        }
+
+        res = jpegWaiter->waitForFrame(exposureTime + SEC);
+        ASSERT_EQ(NO_ERROR, res);
+
+        CpuConsumer::LockedBuffer buffer;
+        res = jpegConsumer->lockNextBuffer(&buffer);
+        ASSERT_EQ(NO_ERROR, res);
+
+        IF_ALOGV() {
+            const char *dumpname =
+                    "/data/local/tmp/camera2_test-capture1jpeg-dump.jpeg";
+            ALOGV("Dumping raw buffer to %s", dumpname);
+            // Write to file
+            std::ofstream jpegFile(dumpname);
+            size_t bpp = 1;
+            for (unsigned int y = 0; y < buffer.height; y++) {
+                jpegFile.write(
+                        (const char *)(buffer.data + y * buffer.stride * bpp),
+                        buffer.width * bpp);
+            }
+            jpegFile.close();
+        }
+
+        res = jpegConsumer->unlockBuffer(buffer);
+        ASSERT_EQ(NO_ERROR, res);
+
+        ASSERT_NO_FATAL_FAILURE(disconnectStream(streamId));
+
+        res = closeCameraDevice(mDevice);
+        ASSERT_EQ(NO_ERROR, res) << "Failed to close camera device";
+
+    }
+}
+
+
+} // namespace android

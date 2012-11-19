@@ -29,7 +29,7 @@
 /*****************************************************************************/
 
 struct hwc_context_t {
-    hwc_composer_device_t device;
+    hwc_composer_device_1_t device;
     /* our private state goes below here */
 };
 
@@ -54,7 +54,7 @@ hwc_module_t HAL_MODULE_INFO_SYM = {
 
 /*****************************************************************************/
 
-static void dump_layer(hwc_layer_t const* l) {
+static void dump_layer(hwc_layer_1_t const* l) {
     ALOGD("\ttype=%d, flags=%08x, handle=%p, tr=%02x, blend=%04x, {%d,%d,%d,%d}, {%d,%d,%d,%d}",
             l->compositionType, l->flags, l->handle, l->transform, l->blending,
             l->sourceCrop.left,
@@ -67,26 +67,26 @@ static void dump_layer(hwc_layer_t const* l) {
             l->displayFrame.bottom);
 }
 
-static int hwc_prepare(hwc_composer_device_t *dev, hwc_layer_list_t* list) {
-    if (list && (list->flags & HWC_GEOMETRY_CHANGED)) {
-        for (size_t i=0 ; i<list->numHwLayers ; i++) {
+static int hwc_prepare(hwc_composer_device_1_t *dev,
+        size_t numDisplays, hwc_display_contents_1_t** displays) {
+    if (displays && (displays[0]->flags & HWC_GEOMETRY_CHANGED)) {
+        for (size_t i=0 ; i<displays[0]->numHwLayers ; i++) {
             //dump_layer(&list->hwLayers[i]);
-            list->hwLayers[i].compositionType = HWC_FRAMEBUFFER;
+            displays[0]->hwLayers[i].compositionType = HWC_FRAMEBUFFER;
         }
     }
     return 0;
 }
 
-static int hwc_set(hwc_composer_device_t *dev,
-        hwc_display_t dpy,
-        hwc_surface_t sur,
-        hwc_layer_list_t* list)
+static int hwc_set(hwc_composer_device_1_t *dev,
+        size_t numDisplays, hwc_display_contents_1_t** displays)
 {
     //for (size_t i=0 ; i<list->numHwLayers ; i++) {
     //    dump_layer(&list->hwLayers[i]);
     //}
 
-    EGLBoolean sucess = eglSwapBuffers((EGLDisplay)dpy, (EGLSurface)sur);
+    EGLBoolean sucess = eglSwapBuffers((EGLDisplay)displays[0]->dpy,
+            (EGLSurface)displays[0]->sur);
     if (!sucess) {
         return HWC_EGL_ERROR;
     }
@@ -117,7 +117,7 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
 
         /* initialize the procs */
         dev->device.common.tag = HARDWARE_DEVICE_TAG;
-        dev->device.common.version = 0;
+        dev->device.common.version = HWC_DEVICE_API_VERSION_1_0;
         dev->device.common.module = const_cast<hw_module_t*>(module);
         dev->device.common.close = hwc_device_close;
 

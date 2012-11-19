@@ -55,7 +55,8 @@ __BEGIN_DECLS
  */
 #define AUDIO_DEVICE_API_VERSION_0_0 HARDWARE_DEVICE_API_VERSION(0, 0)
 #define AUDIO_DEVICE_API_VERSION_1_0 HARDWARE_DEVICE_API_VERSION(1, 0)
-#define AUDIO_DEVICE_API_VERSION_CURRENT AUDIO_DEVICE_API_VERSION_1_0
+#define AUDIO_DEVICE_API_VERSION_2_0 HARDWARE_DEVICE_API_VERSION(2, 0)
+#define AUDIO_DEVICE_API_VERSION_CURRENT AUDIO_DEVICE_API_VERSION_2_0
 
 /**
  * List of known audio HAL modules. This is the base name of the audio HAL
@@ -67,6 +68,7 @@ __BEGIN_DECLS
 #define AUDIO_HARDWARE_MODULE_ID_PRIMARY "primary"
 #define AUDIO_HARDWARE_MODULE_ID_A2DP "a2dp"
 #define AUDIO_HARDWARE_MODULE_ID_USB "usb"
+#define AUDIO_HARDWARE_MODULE_ID_REMOTE_SUBMIX "r_submix"
 
 /**************************************/
 
@@ -394,7 +396,7 @@ typedef struct audio_stream_in audio_stream_in_t;
 /**
  * return the frame size (number of bytes per sample).
  */
-static inline size_t audio_stream_frame_size(struct audio_stream *s)
+static inline size_t audio_stream_frame_size(const struct audio_stream *s)
 {
     size_t chan_samp_sz;
     uint32_t chan_mask = s->get_channels(s);
@@ -469,6 +471,12 @@ struct audio_hw_device {
      * each audio_hw_device implementation.
      *
      * Return value is a bitmask of 1 or more values of audio_devices_t
+     *
+     * NOTE: audio HAL implementations starting with
+     * AUDIO_DEVICE_API_VERSION_2_0 do not implement this function.
+     * All supported devices should be listed in audio_policy.conf
+     * file and the audio policy manager must choose the appropriate
+     * audio module based on information in this file.
      */
     uint32_t (*get_supported_devices)(const struct audio_hw_device *dev);
 
@@ -494,7 +502,7 @@ struct audio_hw_device {
      * master volume control.  AudioFlinger will query this value from the
      * primary audio HAL when the service starts and use the value for setting
      * the initial master volume across all HALs.  HALs which do not support
-     * this method should may leave it set to NULL.
+     * this method may leave it set to NULL.
      */
     int (*get_master_volume)(struct audio_hw_device *dev, float *volume);
 #endif
@@ -595,6 +603,21 @@ struct audio_hw_device {
 
     /** This method dumps the state of the audio hardware */
     int (*dump)(const struct audio_hw_device *dev, int fd);
+
+    /**
+     * set the audio mute status for all audio activities.  If any value other
+     * than 0 is returned, the software mixer will emulate this capability.
+     */
+    int (*set_master_mute)(struct audio_hw_device *dev, bool mute);
+
+    /**
+     * Get the current master mute status for the HAL, if the HAL supports
+     * master mute control.  AudioFlinger will query this value from the primary
+     * audio HAL when the service starts and use the value for setting the
+     * initial master mute across all HALs.  HALs which do not support this
+     * method may leave it set to NULL.
+     */
+    int (*get_master_mute)(struct audio_hw_device *dev, bool *mute);
 };
 typedef struct audio_hw_device audio_hw_device_t;
 

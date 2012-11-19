@@ -157,7 +157,7 @@ struct audio_policy {
                                     audio_stream_type_t stream,
                                     uint32_t samplingRate,
                                     audio_format_t format,
-                                    uint32_t channels,
+                                    audio_channel_mask_t channelMask,
                                     audio_output_flags_t flags);
 
     /* indicates to the audio policy manager that the output starts being used
@@ -182,7 +182,7 @@ struct audio_policy {
     audio_io_handle_t (*get_input)(struct audio_policy *pol, audio_source_t inputSource,
                                    uint32_t samplingRate,
                                    audio_format_t format,
-                                   uint32_t channels,
+                                   audio_channel_mask_t channelMask,
                                    audio_in_acoustics_t acoustics);
 
     /* indicates to the audio policy manager that the input starts being used */
@@ -242,10 +242,10 @@ struct audio_policy {
 
     /* Audio effect management */
     audio_io_handle_t (*get_output_for_effect)(struct audio_policy *pol,
-                                            struct effect_descriptor_s *desc);
+                                            const struct effect_descriptor_s *desc);
 
     int (*register_effect)(struct audio_policy *pol,
-                           struct effect_descriptor_s *desc,
+                           const struct effect_descriptor_s *desc,
                            audio_io_handle_t output,
                            uint32_t strategy,
                            int session,
@@ -258,6 +258,9 @@ struct audio_policy {
     bool (*is_stream_active)(const struct audio_policy *pol,
                              audio_stream_type_t stream,
                              uint32_t in_past_ms);
+
+    bool (*is_source_active)(const struct audio_policy *pol,
+                             audio_source_t source);
 
     /* dump state */
     int (*dump)(const struct audio_policy *pol, int fd);
@@ -330,7 +333,10 @@ struct audio_policy_service_ops {
     /* Audio input Control functions */
     /* */
 
-    /* opens an audio input */
+    /* opens an audio input
+     * deprecated - new implementations should use open_input_on_module,
+     * and the acoustics parameter is ignored
+     */
     audio_io_handle_t (*open_input)(void *service,
                                     audio_devices_t *pDevices,
                                     uint32_t *pSamplingRate,

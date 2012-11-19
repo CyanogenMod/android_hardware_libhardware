@@ -28,12 +28,16 @@ __BEGIN_DECLS
 
 /*****************************************************************************/
 
+#define HWC_HEADER_VERSION          1
+
 #define HWC_MODULE_API_VERSION_0_1  HARDWARE_MODULE_API_VERSION(0, 1)
 
-#define HWC_DEVICE_API_VERSION_0_1  HARDWARE_DEVICE_API_VERSION(0, 1)
-#define HWC_DEVICE_API_VERSION_0_2  HARDWARE_DEVICE_API_VERSION(0, 2)
-#define HWC_DEVICE_API_VERSION_0_3  HARDWARE_DEVICE_API_VERSION(0, 3)
-
+#define HWC_DEVICE_API_VERSION_0_1  HARDWARE_DEVICE_API_VERSION_2(0, 1, HWC_HEADER_VERSION)
+#define HWC_DEVICE_API_VERSION_0_2  HARDWARE_DEVICE_API_VERSION_2(0, 2, HWC_HEADER_VERSION)
+#define HWC_DEVICE_API_VERSION_0_3  HARDWARE_DEVICE_API_VERSION_2(0, 3, HWC_HEADER_VERSION)
+#define HWC_DEVICE_API_VERSION_1_0  HARDWARE_DEVICE_API_VERSION_2(1, 0, HWC_HEADER_VERSION)
+#define HWC_DEVICE_API_VERSION_1_1  HARDWARE_DEVICE_API_VERSION_2(1, 1, HWC_HEADER_VERSION)
+#define HWC_DEVICE_API_VERSION_1_2  HARDWARE_DEVICE_API_VERSION_2(1, 2, HWC_HEADER_VERSION)
 
 enum {
     /* hwc_composer_device_t::set failed in EGL */
@@ -89,6 +93,10 @@ enum {
     /* this is the background layer. it's used to set the background color.
      * there is only a single background layer */
     HWC_BACKGROUND = 2,
+
+    /* this layer holds the result of compositing the HWC_FRAMEBUFFER layers.
+     * Added in HWC_DEVICE_API_VERSION_1_1. */
+    HWC_FRAMEBUFFER_TARGET = 3,
 };
 
 /*
@@ -124,22 +132,67 @@ enum {
 /* attributes queriable with query() */
 enum {
     /*
-     * availability: HWC_DEVICE_API_VERSION_0_2
-     * must return 1 if the background layer is supported, 0 otherwise
+     * Availability: HWC_DEVICE_API_VERSION_0_2
+     * Must return 1 if the background layer is supported, 0 otherwise.
      */
     HWC_BACKGROUND_LAYER_SUPPORTED      = 0,
 
     /*
-     * availability: HWC_DEVICE_API_VERSION_0_3
-     * returns the vsync period in nanosecond
+     * Availability: HWC_DEVICE_API_VERSION_0_3
+     * Returns the vsync period in nanoseconds.
+     *
+     * This query is not used for HWC_DEVICE_API_VERSION_1_1 and later.
+     * Instead, the per-display attribute HWC_DISPLAY_VSYNC_PERIOD is used.
      */
     HWC_VSYNC_PERIOD                    = 1,
+
+    /*
+     * Availability: HWC_DEVICE_API_VERSION_1_1
+     * Returns a mask of supported display types.
+     */
+    HWC_DISPLAY_TYPES_SUPPORTED         = 2,
+};
+
+/* display attributes returned by getDisplayAttributes() */
+enum {
+    /* Indicates the end of an attribute list */
+    HWC_DISPLAY_NO_ATTRIBUTE                = 0,
+
+    /* The vsync period in nanoseconds */
+    HWC_DISPLAY_VSYNC_PERIOD                = 1,
+
+    /* The number of pixels in the horizontal and vertical directions. */
+    HWC_DISPLAY_WIDTH                       = 2,
+    HWC_DISPLAY_HEIGHT                      = 3,
+
+    /* The number of pixels per thousand inches of this configuration.
+     *
+     * Scaling DPI by 1000 allows it to be stored in an int without losing
+     * too much precision.
+     *
+     * If the DPI for a configuration is unavailable or the HWC implementation
+     * considers it unreliable, it should set these attributes to zero.
+     */
+    HWC_DISPLAY_DPI_X                       = 4,
+    HWC_DISPLAY_DPI_Y                       = 5,
 };
 
 /* Allowed events for hwc_methods::eventControl() */
 enum {
     HWC_EVENT_VSYNC     = 0,
     HWC_EVENT_ORIENTATION    // To notify HWC about the device orientation
+};
+
+/* Display types and associated mask bits. */
+enum {
+    HWC_DISPLAY_PRIMARY     = 0,
+    HWC_DISPLAY_EXTERNAL    = 1,    // HDMI, DP, etc.
+    HWC_NUM_DISPLAY_TYPES
+};
+
+enum {
+    HWC_DISPLAY_PRIMARY_BIT     = 1 << HWC_DISPLAY_PRIMARY,
+    HWC_DISPLAY_EXTERNAL_BIT    = 1 << HWC_DISPLAY_EXTERNAL,
 };
 
 /*****************************************************************************/
