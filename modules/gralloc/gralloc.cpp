@@ -208,6 +208,11 @@ static int gralloc_alloc(alloc_device_t* dev,
     int align = 4;
     int bpp = 0;
     switch (format) {
+#ifdef HTC_3D_SUPPORT   // HTC uses mode 96 for 3D camera
+        case 96:
+            bpp = 4;
+            break;
+#endif
         case HAL_PIXEL_FORMAT_RGBA_8888:
         case HAL_PIXEL_FORMAT_RGBX_8888:
         case HAL_PIXEL_FORMAT_BGRA_8888:
