@@ -19,6 +19,10 @@
 #ifndef ANDROID_AUDIO_HAL_INTERFACE_H
 #define ANDROID_AUDIO_HAL_INTERFACE_H
 
+#ifdef QCOM_HARDWARE
+#undef QCOM_HARDWARE
+#endif
+
 #include <stdint.h>
 #include <string.h>
 #include <strings.h>
