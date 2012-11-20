@@ -75,6 +75,9 @@ typedef struct preview_stream_ops {
     int (*cancel_buffer)(struct preview_stream_ops* w,
                 buffer_handle_t* buffer);
     int (*set_buffer_count)(struct preview_stream_ops* w, int count);
+#ifdef HTC_3D_SUPPORT
+    int (*set_3d_mode)(const struct preview_stream_ops *w, int r1, int r2, int r3);
+#endif
     int (*set_buffers_geometry)(struct preview_stream_ops* pw,
                 int w, int h, int format);
     int (*set_crop)(struct preview_stream_ops *w,
