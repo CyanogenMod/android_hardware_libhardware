@@ -1,0 +1,8 @@
+Change-Id: Ib79f1d4573019a9acfcb37ac23d836404971d124
+Code-Review+2: Steve Kondik <shade@chemlab.org>
+Verified+1: Steve Kondik <shade@chemlab.org>
+Submitted-by: Steve Kondik <shade@chemlab.org>
+Submitted-at: Wed, 28 Nov 2012 10:17:36 -0800
+Reviewed-on: http://review.cyanogenmod.org/26666
+Project: CyanogenMod/android_hardware_libhardware
+Branch: refs/heads/mr1-staging
