@@ -129,9 +129,14 @@ typedef uint16_t GpsLocationFlags;
 #define ULP_CAPABILITY                  0x0000020
 /** Flags used to specify which aiding data to delete
     when calling delete_aiding_data(). */
+#ifdef NEW_QC_GPS
 typedef uint32_t GpsAidingData;
+#else
+typedef uint16_t GpsAidingData;
+#endif
 // IMPORTANT: Note that the following values must match
 // constants in GpsLocationProvider.java.
+#ifdef NEW_QC_GPS
 #define GPS_DELETE_EPHEMERIS                     0x00000001
 #define GPS_DELETE_ALMANAC                       0x00000002
 #define GPS_DELETE_POSITION                      0x00000004
@@ -153,11 +158,29 @@ typedef uint32_t GpsAidingData;
 #define GPS_DELETE_ALMANAC_CORR_GLO              0x00040000
 #define GPS_DELETE_TIME_GPS                      0x00080000
 #define GPS_DELETE_TIME_GLO                      0x00100000
-
 #define GPS_DELETE_ALL                           0xFFFFFFFF
+#else
+#define GPS_DELETE_EPHEMERIS        0x0001
+#define GPS_DELETE_ALMANAC          0x0002
+#define GPS_DELETE_POSITION         0x0004
+#define GPS_DELETE_TIME             0x0008
+#define GPS_DELETE_IONO             0x0010
+#define GPS_DELETE_UTC              0x0020
+#define GPS_DELETE_HEALTH           0x0040
+#define GPS_DELETE_SVDIR            0x0080
+#define GPS_DELETE_SVSTEER          0x0100
+#define GPS_DELETE_SADATA           0x0200
+#define GPS_DELETE_RTI              0x0400
+#define GPS_DELETE_CELLDB_INFO      0x8000
+#define GPS_DELETE_ALL              0xFFFF
+#endif
 
 /** AGPS type */
+#ifdef NEW_QC_GPS
 typedef int16_t AGpsType;
+#else
+typedef uint16_t AGpsType;
+#endif
 #define AGPS_TYPE_INVALID       -1
 #define AGPS_TYPE_ANY           0
 #define AGPS_TYPE_SUPL          1
@@ -385,8 +408,10 @@ typedef struct {
     size_t          size;
     /** Contains GpsLocationFlags bits. */
     uint16_t        flags;
+#ifdef NEW_QC_GPS
     /* Provider indicator for HYBRID or GPS */
     uint16_t        position_source;
+#endif
     /** Represents latitude in degrees. */
     double          latitude;
     /** Represents longitude in degrees. */
@@ -402,6 +427,7 @@ typedef struct {
     float           accuracy;
     /** Timestamp for the location fix. */
     GpsUtcTime      timestamp;
+#ifdef NEW_QC_GPS
     /*allows HAL to pass additional information related to the location */
     int             rawDataSize;         /* in # of bytes */
     void            * rawData;
@@ -409,6 +435,7 @@ typedef struct {
     float           floor_number;
     char            map_url[GPS_LOCATION_MAP_URL_SIZE];
     unsigned char   map_index[GPS_LOCATION_MAP_INDEX_SIZE];
+#endif
 } GpsLocation;
 
 /** Represents the status. */
@@ -430,6 +457,10 @@ typedef struct {
     float   elevation;
     /** Azimuth of SV in degrees. */
     float   azimuth;
+#ifdef SAMSUNG_GPS
+    /** Placeholder for ABI compat */
+    int     unknown;
+#endif
 } GpsSvInfo;
 
 /** Represents SV status. */
@@ -467,6 +498,10 @@ typedef struct {
     uint16_t mcc;
     uint16_t mnc;
     uint16_t lac;
+#ifdef SAMSUNG_GPS
+    /** Placeholder for ABI compat */
+    uint16_t unknown;
+#endif
     uint32_t cid;
 } AGpsRefLocationCellID;
 
@@ -588,8 +623,10 @@ typedef struct {
     /** Get a pointer to extension information. */
     const void* (*get_extension)(const char* name);
 
+#ifdef NEW_QC_GPS
     /* set criterias of location requests */
     int (*update_criteria) (UlpLocationCriteria criteria );
+#endif
 } GpsInterface;
 
 /** Extended interface for raw GPS command support. */
@@ -832,10 +869,14 @@ typedef struct {
 
     AGpsType        type;
     AGpsStatusValue status;
+#ifdef NEW_QC_GPS
     int             ipv4_addr;
     char            ipv6_addr[16];
     char            ssid[SSID_BUF_SIZE];
     char            password[SSID_BUF_SIZE];
+#else
+    uint32_t        ipaddr;
+#endif
 } AGpsStatus;
 
 /** Callback with AGPS status information.
@@ -864,16 +905,31 @@ typedef struct {
      * Notifies that a data connection is available and sets
      * the name of the APN to be used for SUPL.
      */
+#ifdef NEW_QC_GPS
     int  (*data_conn_open)( AGpsType agpsType,
                             const char* apn, AGpsBearerType bearerType );
+#else
+    int  (*data_conn_open)( const char *apn );
+#endif
+
     /**
      * Notifies that the AGPS data connection has been closed.
      */
+#ifdef NEW_QC_GPS
     int  (*data_conn_closed)( AGpsType agpsType );
+#else
+    int  (*data_conn_closed)();
+#endif
+
     /**
      * Notifies that a data connection is not available for AGPS.
      */
+#ifdef NEW_QC_GPS
     int  (*data_conn_failed)(AGpsType  agpsType );
+#else
+    int  (*data_conn_failed)();
+#endif
+
     /**
      * Sets the hostname and port for the AGPS server.
      */
