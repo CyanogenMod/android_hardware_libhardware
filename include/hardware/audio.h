@@ -409,29 +409,22 @@ static inline size_t audio_stream_frame_size(const struct audio_stream *s)
     size_t chan_samp_sz;
     uint32_t chan_mask = s->get_channels(s);
     int format = s->get_format(s);
-    char *tmpparam;
-    int isParamEqual;
 
 #ifdef QCOM_HARDWARE
-    if (audio_is_input_channel(chan_mask)) {
-        chan_mask &= (AUDIO_CHANNEL_IN_STEREO | \
-                      AUDIO_CHANNEL_IN_MONO );
-    }
-
-    tmpparam = s->get_parameters(s, "voip_flag");
-    isParamEqual = !strcmp(tmpparam,"voip_flag=1");
-    free(tmpparam);
-    if(isParamEqual) {
-        if(format != AUDIO_FORMAT_PCM_8_BIT)
-            return popcount(chan_mask) * sizeof(int16_t);
-        else
-            return popcount(chan_mask) * sizeof(int8_t);
-    }
+    if (!s)
+        return 0;
 
     if (audio_is_input_channel(chan_mask)) {
         chan_mask &= (AUDIO_CHANNEL_IN_STEREO | \
                       AUDIO_CHANNEL_IN_MONO | \
                       AUDIO_CHANNEL_IN_5POINT1);
+    }
+
+    if(!strncmp(s->get_parameters(s, "voip_flag"),"voip_flag=1",sizeof("voip_flag=1"))) {
+        if(format != AUDIO_FORMAT_PCM_8_BIT)
+            return popcount(chan_mask) * sizeof(int16_t);
+        else
+            return popcount(chan_mask) * sizeof(int8_t);
     }
 #endif
 
