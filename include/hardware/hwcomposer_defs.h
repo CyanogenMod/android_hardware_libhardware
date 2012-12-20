@@ -122,8 +122,11 @@ enum {
        cursor overlay hardware. hwcomposer will also all async position updates
        of this layer outside of the normal prepare()/set() loop. Added in
        HWC_DEVICE_API_VERSION_1_4. */
-    HWC_CURSOR_OVERLAY =  5
- };
+    HWC_CURSOR_OVERLAY =  5,
+
+    /* this layer will be handled in the HWC, using a blit engine */
+    HWC_BLIT = 6,
+};
 /*
  * hwc_layer_t::blending values
  */
