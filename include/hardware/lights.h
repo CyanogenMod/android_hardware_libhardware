@@ -51,6 +51,14 @@ __BEGIN_DECLS
 #define LIGHT_ID_BLUETOOTH          "bluetooth"
 #define LIGHT_ID_WIFI               "wifi"
 
+/*
+* Additional hardware-specific lights
+*/
+#define LIGHT_ID_CAPS "caps"
+#define LIGHT_ID_FUNC "func"
+#define LIGHT_ID_WIMAX "wimax"
+#define LIGHT_ID_FLASHLIGHT "flashlight"
+
 /* ************************************************************************
  * Flash modes for the flashMode field of light_state_t.
  */
