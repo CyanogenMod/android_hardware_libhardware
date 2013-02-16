@@ -86,7 +86,14 @@ enum {
      * composition type of this layer, then the hwcomposer will allow async
      * position updates to this layer via setCursorPositionAsync().
      */
-    HWC_IS_CURSOR_LAYER = 0x00000002
+    HWC_IS_CURSOR_LAYER = 0x00000002,
+
+    /*
+     * HWC_SCREENSHOT_ANIMATOR_LAYER is set by surfaceflinger to indicate that this
+     * layer is a screenshot animating layer.  HWC uses this info to disable rotation
+     * animation on External Display
+     */
+    HWC_SCREENSHOT_ANIMATOR_LAYER = 0x00000004
 };
 
 /*
@@ -195,7 +202,8 @@ enum {
 
 /* Allowed events for hwc_methods::eventControl() */
 enum {
-    HWC_EVENT_VSYNC     = 0
+    HWC_EVENT_VSYNC     = 0,
+    HWC_EVENT_ORIENTATION
 };
 
 /* Display types and associated mask bits. */
