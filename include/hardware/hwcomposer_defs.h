@@ -97,9 +97,6 @@ enum {
     /* this layer holds the result of compositing the HWC_FRAMEBUFFER layers.
      * Added in HWC_DEVICE_API_VERSION_1_1. */
     HWC_FRAMEBUFFER_TARGET = 3,
-
-    /* this layer will be handled in the HWC, using a blit engine */
-    HWC_BLIT = 4,
 };
 
 /*
