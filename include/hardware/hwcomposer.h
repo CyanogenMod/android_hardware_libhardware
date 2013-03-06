@@ -157,11 +157,6 @@ typedef struct hwc_layer_1 {
             /* transformation to apply to the buffer during composition */
             uint32_t transform;
 
-#ifdef QCOM_HARDWARE
-            /* source transform of the buffer */
-            uint32_t sourceTransform;
-#endif
-
             /* blending to apply during composition */
             int32_t blending;
 
