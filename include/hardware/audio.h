@@ -31,6 +31,9 @@
 #include <hardware/hardware.h>
 #include <system/audio.h>
 #include <hardware/audio_effect.h>
+#ifdef QCOM_LISTEN_FEATURE_ENABLE
+#include <listen_types.h>
+#endif
 
 __BEGIN_DECLS
 
@@ -522,7 +525,6 @@ struct audio_hw_device {
 
     /** This method dumps the state of the audio hardware */
     int (*dump)(const struct audio_hw_device *dev, int fd);
-
     /**
      * set the audio mute status for all audio activities.  If any value other
      * than 0 is returned, the software mixer will emulate this capability.
@@ -537,6 +539,20 @@ struct audio_hw_device {
      * method may leave it set to NULL.
      */
     int (*get_master_mute)(struct audio_hw_device *dev, bool *mute);
+
+#ifdef QCOM_LISTEN_FEATURE_ENABLE
+    /** This method opens the listen session and returns a handle */
+    status_t (*open_listen_session)(struct audio_hw_device *dev,
+                                    struct listen_session** handle);
+
+    /** This method closes the listen session  */
+    status_t (*close_listen_session)(struct audio_hw_device *dev,
+                                     struct listen_session* handle);
+
+    /** This method sets the mad observer callback  */
+    status_t (*set_mad_observer)(struct audio_hw_device *dev,
+                                 listen_callback_t cb_func);
+#endif
 };
 typedef struct audio_hw_device audio_hw_device_t;
 
