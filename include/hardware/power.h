@@ -17,6 +17,8 @@
 #ifndef ANDROID_INCLUDE_HARDWARE_POWER_H
 #define ANDROID_INCLUDE_HARDWARE_POWER_H
 
+#define HAS_MULTIMEDIA_HINTS
+
 #include <stdint.h>
 #include <sys/cdefs.h>
 #include <sys/types.h>
@@ -41,6 +43,8 @@ __BEGIN_DECLS
 typedef enum {
     POWER_HINT_VSYNC = 0x00000001,
     POWER_HINT_INTERACTION = 0x00000002,
+    POWER_HINT_VIDEO_ENCODE = 0x00000003,
+    POWER_HINT_VIDEO_DECODE = 0x00000004,
 } power_hint_t;
 
 /**
