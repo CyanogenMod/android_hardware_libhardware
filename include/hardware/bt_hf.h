@@ -1,4 +1,6 @@
-/*
+/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
+ *
  * Copyright (C) 2012 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -228,6 +230,9 @@ typedef struct {
      * Register the BtHf callbacks
      */
     bt_status_t (*init)( bthf_callbacks_t* callbacks, int max_hf_clients);
+
+    /** Set the feature bitmask */
+    bt_status_t (*init_features)( int feature_bitmask );
 
     /** connect to headset */
     bt_status_t (*connect)( bt_bdaddr_t *bd_addr );
