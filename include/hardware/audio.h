@@ -144,6 +144,9 @@ __BEGIN_DECLS
 /* Query if Proxy can be Opend */
 #define AUDIO_CAN_OPEN_PROXY "can_open_proxy"
 
+/* Query fm volume */
+#define AUDIO_PARAMETER_KEY_FM_VOLUME "fm_volume"
+
 /**************************************/
 
 /* common audio stream configuration parameters */
