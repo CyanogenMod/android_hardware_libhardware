@@ -141,6 +141,10 @@ typedef void (* bthf_unknown_at_cmd_callback)(char *at_string);
  */
 typedef void (* bthf_key_pressed_cmd_callback)();
 
+/** Callback for Codec negotiation event.
+*/
+typedef void (* bthf_codec_negotiated_callback)(int codec_type);
+
 /** BT-HF callback structure. */
 typedef struct {
     /** set to sizeof(BtHfCallbacks) */
@@ -161,6 +165,7 @@ typedef struct {
     bthf_clcc_cmd_callback          clcc_cmd_cb;
     bthf_unknown_at_cmd_callback    unknown_at_cmd_cb;
     bthf_key_pressed_cmd_callback   key_pressed_cmd_cb;
+    bthf_codec_negotiated_callback  codec_negotiated_callback;
 } bthf_callbacks_t;
 
 /** Network Status */
