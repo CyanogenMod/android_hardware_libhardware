@@ -331,6 +331,9 @@ typedef struct {
     uint16_t mcc;
     uint16_t mnc;
     uint16_t lac;
+#ifdef AGPS_USE_PSC
+    uint16_t psc;
+#endif
     uint32_t cid;
 } AGpsRefLocationCellID;
 
