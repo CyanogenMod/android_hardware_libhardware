@@ -404,7 +404,6 @@ static int adev_open(const hw_module_t* module, const char* name,
 #ifndef ICS_AUDIO_BLOB
     adev->device.get_master_volume = adev_get_master_volume;
     adev->device.set_master_mute = adev_set_master_mute;
-    adev->device.get_master_mute = adev_get_master_mute;
 #endif
     adev->device.set_mode = adev_set_mode;
     adev->device.set_mic_mute = adev_set_mic_mute;

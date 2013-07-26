@@ -162,6 +162,7 @@ struct audio_config {
 
 typedef struct audio_config audio_config_t;
 
+#ifdef QCOM_HARDWARE
 /** Structure to save buffer information for applying effects for
  *  LPA buffers */
 struct buf_info {
@@ -169,6 +170,7 @@ struct buf_info {
     int nBufs;
     int **buffers;
 };
+#endif
 
 /* common audio stream parameters and operations */
 struct audio_stream {
@@ -294,6 +296,7 @@ struct audio_stream_out {
                                uint32_t *dsp_frames);
 
 #ifndef ICS_AUDIO_BLOB
+#ifdef QCOM_HARDWARE
     /**
      * start audio data rendering
      */
@@ -313,6 +316,7 @@ struct audio_stream_out {
      * stop audio data rendering
      */
     int (*stop)(struct audio_stream_out *stream);
+#endif
 
     /**
      * get the local time at which the next write to the audio driver will be presented.
@@ -321,6 +325,7 @@ struct audio_stream_out {
     int (*get_next_write_timestamp)(const struct audio_stream_out *stream,
                                     int64_t *timestamp);
 
+#ifdef QCOM_HARDWARE
     /**
     * return the current timestamp after quering to the driver
      */
@@ -343,6 +348,7 @@ struct audio_stream_out {
      */
     int (*is_buffer_available) (const struct audio_stream_out *stream,
                                      int *isAvail);
+#endif
 #endif
 
 };
@@ -421,6 +427,7 @@ typedef struct audio_stream_in audio_stream_in_t;
 static inline size_t audio_stream_frame_size(const struct audio_stream *s)
 {
     size_t chan_samp_sz;
+#ifdef QCOM_HARDWARE
     uint32_t chan_mask = s->get_channels(s);
     int format = s->get_format(s);
     char *tmpparam;
@@ -458,6 +465,9 @@ static inline size_t audio_stream_frame_size(const struct audio_stream *s)
     case AUDIO_FORMAT_AMR_WB:
         chan_samp_sz = 61;
         break;
+#else
+    switch (s->get_format(s)) {
+#endif
     case AUDIO_FORMAT_PCM_16_BIT:
         chan_samp_sz = sizeof(int16_t);
         break;
@@ -467,7 +477,11 @@ static inline size_t audio_stream_frame_size(const struct audio_stream *s)
         break;
     }
 
+#ifdef QCOM_HARDWARE
     return popcount(chan_mask) * chan_samp_sz;
+#else
+    return popcount(s->get_channels(s)) * chan_samp_sz;
+#endif
 }
 
 
@@ -638,6 +652,7 @@ struct audio_hw_device {
      * method may leave it set to NULL.
      */
     int (*get_master_mute)(struct audio_hw_device *dev, bool *mute);
+#endif
 
 #ifdef QCOM_LISTEN_FEATURE_ENABLE
     /** This method opens the listen session and returns a handle */
@@ -669,6 +684,7 @@ static inline int audio_hw_device_close(struct audio_hw_device* device)
     return device->common.close(&device->common);
 }
 
+#ifdef QCOM_HARDWARE
 #ifdef __cplusplus
 /**
  *Observer class to post the Events from HAL to Flinger
@@ -678,6 +694,7 @@ public:
     virtual ~AudioEventObserver() {}
     virtual void postEOS(int64_t delayUs) = 0;
 };
+#endif
 #endif
 __END_DECLS
 
