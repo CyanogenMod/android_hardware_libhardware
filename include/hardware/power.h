@@ -114,8 +114,6 @@ typedef struct power_module {
      *     and it may be appropriate to raise speeds of CPU, memory bus,
      *     etc.  The data parameter is unused.
      *
-<<<<<<< HEAD
-=======
      * POWER_HINT_VIDEO_ENCODE
      *
      *     The user just started or stopped recording video. When encode
@@ -133,7 +131,6 @@ typedef struct power_module {
      *     be boosted for a specific duration. The data parameter is an
      *     integer value of the boost duration in microseconds.
      *
->>>>>>> power: Add POWER_HINT_CPU_BOOST
      * A particular platform may choose to ignore any hint.
      *
      * availability: version 0.2
