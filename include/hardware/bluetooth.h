@@ -252,6 +252,13 @@ typedef enum {
      */
     BT_PROPERTY_LOCAL_LE_FEATURES,
 
+   /**
+    * Description - Trust value of the remote device
+    * Access mode - GET and SET
+    * Data type   - boolean.
+    */
+    BT_PROPERTY_REMOTE_TRUST_VALUE = 0xFD,
+
     /* Properties unique to remote device */
     /**
      * Description - DI Record of the remote device
