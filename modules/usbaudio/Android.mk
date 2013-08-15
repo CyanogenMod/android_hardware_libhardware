@@ -16,6 +16,16 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
+ifeq ($(TARGET_QCOM_AUDIO_VARIANT),caf)
+ifeq ($(BOARD_USES_ALSA_AUDIO),true)
+LOCAL_CFLAGS += -DUSE_MMAP
+endif
+endif
+
+ifneq ($(BOARD_USB_AUDIO_CARD_ID),)
+LOCAL_CFLAGS += -DCARD_ID=$(BOARD_USB_AUDIO_CARD_ID)
+endif
+
 LOCAL_MODULE := audio.usb.default
 LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
 LOCAL_SRC_FILES := \
