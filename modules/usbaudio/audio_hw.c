@@ -15,7 +15,7 @@
  */
 
 #define LOG_TAG "usb_audio_hw"
-/*#define LOG_NDEBUG 0*/
+//#define LOG_NDEBUG 0
 
 #include <errno.h>
 #include <pthread.h>
@@ -32,6 +32,10 @@
 #include <hardware/audio.h>
 
 #include <tinyalsa/asoundlib.h>
+
+#ifndef CARD_ID
+#define CARD_ID 1
+#endif
 
 struct pcm_config pcm_config = {
     .channels = 2,
@@ -165,7 +169,7 @@ static int out_set_parameters(struct audio_stream *stream, const char *kvpairs)
     if (ret >= 0)
         adev->card = atoi(value);
     else
-        adev->card = 1;
+        adev->card = CARD_ID;
 
     ret = str_parms_get_str(parms, "device", value, sizeof(value));
     if (ret >= 0)
