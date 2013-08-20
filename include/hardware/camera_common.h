@@ -167,6 +167,50 @@ typedef struct camera_info {
     const camera_metadata_t *static_camera_characteristics;
 } camera_info_t;
 
+#ifdef NVCAMERA_HARDWARE
+typedef struct camera_info_extended {
+    /**
+     * The direction that the camera faces to. It should be CAMERA_FACING_BACK
+     * or CAMERA_FACING_FRONT.
+     *
+     * Version information:
+     *   Valid in all camera_module versions
+     */
+    int facing;
+
+    /**
+     * The orientation of the camera image. The value is the angle that the
+     * camera image needs to be rotated clockwise so it shows correctly on the
+     * display in its natural orientation. It should be 0, 90, 180, or 270.
+     *
+     * For example, suppose a device has a naturally tall screen. The
+     * back-facing camera sensor is mounted in landscape. You are looking at the
+     * screen. If the top side of the camera sensor is aligned with the right
+     * edge of the screen in natural orientation, the value should be 90. If the
+     * top side of a front-facing camera sensor is aligned with the right of the
+     * screen, the value should be 270.
+     *
+     * Version information:
+     *   Valid in all camera_module versions
+     */
+    int orientation;
+
+    /**
+     * Indicates whether the camera can be used in stereo mode. It should be
+     * CAMERA_STEREO_CAPS_UNDEFINED, CAMERA_STEREO_CAPS_MONO or CAMERA_STEREO_CAPS_STEREO.
+     */
+    int stereoCaps;
+
+    /**
+     * It indicates whether camera is connected via USB, or is built-in.
+     * CAMERA_CONNECTION_INTERNAL indicates a built-in camera,
+     * while CAMERA_CONNECTION_USB indicates a camera connected via USB. It should be
+     * CAMERA_CONNECTION_UNDEFINED, CAMERA_CONNECTION_INTERNAL or CAMERA_CONNECTION_USB.
+     */
+    int connection;
+} camera_info_extended_t;
+#endif
+
 /**
  * camera_device_status_t:
  *
@@ -267,6 +311,10 @@ typedef struct camera_module {
      *
      */
     int (*get_camera_info)(int camera_id, struct camera_info *info);
+
+#ifdef NVCAMERA_HARDWARE
+    int (*get_camera_info_extended)(int camera_id, struct camera_info_extended *info);
+#endif
 
     /**
      * set_callbacks:
