@@ -69,6 +69,10 @@ struct stream_out {
  * following order: hw device > out stream
  */
 
+/* out_set_parameters() sets this to 1 whilst another output device is active in order
+   to prevent it from later resetting the output device back to the hard coded default */
+static int out_override = 0;
+
 /* Helper functions */
 
 /* must be called with hw device and output stream mutexes locked */
@@ -161,23 +165,36 @@ static int out_set_parameters(struct audio_stream *stream, const char *kvpairs)
     char value[32];
     int ret;
     int routing = 0;
+    int closing = 0;
 
     parms = str_parms_create_str(kvpairs);
     pthread_mutex_lock(&adev->lock);
 
-    ret = str_parms_get_str(parms, "card", value, sizeof(value));
+    ret = str_parms_get_str(parms, "closing", value, sizeof(value));
     if (ret >= 0)
+    {
+        closing = (strcmp(value, "true") == 0);
+        out_override = !closing;
+    }
+
+    ret = str_parms_get_str(parms, "card", value, sizeof(value));
+    if (ret >= 0) {
         adev->card = atoi(value);
-    else
-        adev->card = CARD_ID;
+        out_override = 1;
+    }
 
     ret = str_parms_get_str(parms, "device", value, sizeof(value));
-    if (ret >= 0)
+    if (ret >= 0) {
         adev->device = atoi(value);
-    else
-        adev->device = 0;
+        out_override = 1;
+    }
 
-    ALOGD("out_set_parameters card [%d] device[%d]", adev->card, adev->device);
+    if (out_override == 0) {
+        adev->card = CARD_ID;
+        adev->device = 0;
+    }
+
+    ALOGD("out_set_parameters card [%d] device[%d] out_override[%d]", adev->card, adev->device, out_override);
     pthread_mutex_unlock(&adev->lock);
     str_parms_destroy(parms);
 
