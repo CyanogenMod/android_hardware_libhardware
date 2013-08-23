@@ -80,6 +80,7 @@ typedef struct
     int         product_id;
     int         version;
     uint8_t     ctry_code;
+    int         priority;
     int         dl_len;
     uint8_t     dsc_list[BTHH_MAX_DSC_LEN];
 } bthh_hid_info_t;
@@ -179,6 +180,9 @@ typedef struct {
 
     /** Send data to HID device. */
     bt_status_t (*send_data)(bt_bdaddr_t *bd_addr, char* data);
+
+    /** Set the Device Priority */
+    bt_status_t (*set_priority)(bt_bdaddr_t *bd_addr, int priority);
 
     /** Closes the interface. */
     void  (*cleanup)( void );
