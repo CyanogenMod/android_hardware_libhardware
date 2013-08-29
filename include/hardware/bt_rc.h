@@ -52,11 +52,23 @@ typedef enum {
     BTRC_EVT_TRACK_REACHED_START = 0x04,
     BTRC_EVT_PLAY_POS_CHANGED = 0x05,
     BTRC_EVT_APP_SETTINGS_CHANGED = 0x08,
+    BTRC_EVT_AVAILABLE_PLAYERS_CHANGED = 0x0a,
+    BTRC_EVT_ADDRESSED_PLAYER_CHANGED = 0x0b,
 } btrc_event_id_t;
+
+//used for Scope
+typedef enum {
+    BTRC_EVT_MEDIA_PLAYLIST = 0,
+    BTRC_EVT_MEDIA_VIRTUALFILESYST = 1,
+    BTRC_EVT_SEARCH = 2,
+    BTRC_EVT_NOWPLAYING = 3,
+    BTRC_EVT_MAX_BROWSE = 4,
+} btrc_browse_folderitem_t;
 
 typedef enum {
     BTRC_NOTIFICATION_TYPE_INTERIM = 0,
     BTRC_NOTIFICATION_TYPE_CHANGED = 1,
+    BTRC_NOTIFICATION_TYPE_REJECT = 2,
 } btrc_notification_type_t;
 
 typedef enum {
@@ -103,12 +115,19 @@ typedef struct {
     uint8_t attr_values[BTRC_MAX_APP_SETTINGS];
 } btrc_player_settings_t;
 
+typedef struct {
+    uint32_t start_item;
+    uint32_t end_item;
+    uint32_t size;
+}btrc_getfolderitem_t;
+
 typedef union
 {
     btrc_play_status_t play_status;
     btrc_uid_t track; /* queue position in NowPlaying */
     uint32_t song_pos;
     btrc_player_settings_t player_setting;
+    uint16_t player_id;
 } btrc_register_notification_t;
 
 typedef struct {
@@ -124,6 +143,40 @@ typedef struct {
 /** Callback for the controller's supported feautres */
 typedef void (* btrc_remote_features_callback)(bt_bdaddr_t *bd_addr,
                                                       btrc_remote_features_t features);
+#define BTRC_FEATURE_MASK_SIZE 16
+
+typedef uint8_t btrc_feature_mask_t[BTRC_FEATURE_MASK_SIZE];
+
+typedef struct {
+    uint16_t              charset_id;
+    uint16_t              str_len;
+    uint8_t               *p_str;
+} btrc_player_full_name_t;
+
+typedef struct
+{
+    uint16_t              player_id;
+    uint8_t               major_type;
+    uint32_t              sub_type;
+    uint8_t               play_status;
+    btrc_feature_mask_t   features;       /* Supported feature bit mask*/
+    btrc_player_full_name_t     name;           /* The player name, name length and character set id.*/
+} btrc_folder_list_item_player_t;
+
+typedef struct
+{
+    uint8_t                          item_type;
+    btrc_folder_list_item_player_t   player;
+} btrc_folder_list_item_t;
+
+/* GetFolderItems */
+typedef struct
+{
+    uint8_t                   status;
+    uint16_t                  uid_counter;
+    uint16_t                  item_count;
+    btrc_folder_list_item_t   *p_item_list;
+} btrc_folder_list_entries_t;
 
 /** Callback for play status request */
 typedef void (* btrc_get_play_status_callback)();
@@ -170,6 +223,9 @@ typedef void (* btrc_volume_change_callback) (uint8_t volume, uint8_t ctype);
 
 /** Callback for passthrough commands */
 typedef void (* btrc_passthrough_cmd_callback) (int id, int key_state);
+typedef void (* btrc_get_folder_items_callback) (btrc_browse_folderitem_t id , btrc_getfolderitem_t *param);
+
+typedef void (* btrc_set_addressed_player_callback) (uint32_t player_id);
 
 /** BT-RC callback structure. */
 typedef struct {
@@ -187,6 +243,8 @@ typedef struct {
     btrc_register_notification_callback         register_notification_cb;
     btrc_volume_change_callback                 volume_change_cb;
     btrc_passthrough_cmd_callback               passthrough_cmd_cb;
+    btrc_get_folder_items_callback              get_folderitems_cb;
+    btrc_set_addressed_player_callback          set_addrplayer_cb;
 } btrc_callbacks_t;
 
 /** Represents the standard BT-RC interface. */
@@ -209,12 +267,12 @@ typedef struct {
     /** Lists the support player application attributes (Shuffle/Repeat/...)
     **  num_attr: Specifies the number of attributes contained in the pointer p_attrs
     */
-    bt_status_t (*list_player_app_attr_rsp)( int num_attr, btrc_player_attr_t *p_attrs);
+    bt_status_t (*list_player_app_attr_rsp)( uint8_t num_attr, btrc_player_attr_t *p_attrs);
 
     /** Lists the support player application attributes (Shuffle Off/On/Group)
     **  num_val: Specifies the number of values contained in the pointer p_vals
     */
-    bt_status_t (*list_player_app_value_rsp)( int num_val, uint8_t *p_vals);
+    bt_status_t (*list_player_app_value_rsp)( uint8_t num_val, uint8_t *p_vals);
 
     /** Returns the current application attribute values for each of the specified attr_id */
     bt_status_t (*get_player_app_value_rsp)( btrc_player_settings_t *p_vals);
@@ -256,6 +314,9 @@ typedef struct {
     ** volume: Should be in the range 0-127. bit7 is reseved and cannot be set
     */
     bt_status_t (*set_volume)(uint8_t volume);
+    bt_status_t (*get_folder_items_rsp) (btrc_folder_list_entries_t *p_param);
+
+    bt_status_t (*set_addressed_player_rsp) (btrc_status_t status_code);
 
     /** Closes the interface. */
     void  (*cleanup)( void );
