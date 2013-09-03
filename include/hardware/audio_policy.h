@@ -263,8 +263,10 @@ struct audio_policy {
             audio_stream_type_t stream,
             uint32_t in_past_ms);
 
+#ifndef ICS_AUDIO_BLOB
     bool (*is_source_active)(const struct audio_policy *pol,
             audio_source_t source);
+#endif
 
     /* dump state */
     int (*dump)(const struct audio_policy *pol, int fd);
