@@ -183,9 +183,7 @@ enum {
 /* Allowed events for hwc_methods::eventControl() */
 enum {
     HWC_EVENT_VSYNC     = 0,
-#ifdef QCOM_HARDWARE
     HWC_EVENT_ORIENTATION
-#endif
 };
 
 /* Display types and associated mask bits. */
