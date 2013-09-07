@@ -540,7 +540,7 @@ struct audio_hw_device {
     int (*get_master_volume)(struct audio_hw_device *dev, float *volume);
 #endif
 
-#ifdef QCOM_FM_ENABLED
+#if defined(QCOM_FM_ENABLED) && !defined(QCOM_NEW_FM)
     /** set the fm audio volume. Range is between 0.0 and 1.0 */
     int (*set_fm_volume)(struct audio_hw_device *dev, float volume);
 #endif

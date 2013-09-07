@@ -409,7 +409,7 @@ struct audio_policy_service_ops {
                         audio_io_handle_t src_output,
                         audio_io_handle_t dst_output);
 
-#ifdef QCOM_FM_ENABLED
+#if defined(QCOM_FM_ENABLED) && !defined(QCOM_NEW_FM)
     /* set fm audio volume. */
     int (*set_fm_volume)(void *service,
                          float volume,
