@@ -118,6 +118,12 @@ __BEGIN_DECLS
  * "sup_sampling_rates=44100|48000" */
 #define AUDIO_PARAMETER_STREAM_SUP_SAMPLING_RATES "sup_sampling_rates"
 
+/* Query handle fm parameter*/
+#define AUDIO_PARAMETER_KEY_HANDLE_FM "handle_fm"
+
+/* Query fm volume */
+#define AUDIO_PARAMETER_KEY_FM_VOLUME "fm_volume"
+
 /**
  * audio codec parameters
  */
