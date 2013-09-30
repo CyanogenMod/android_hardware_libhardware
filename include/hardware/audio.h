@@ -146,6 +146,12 @@ __BEGIN_DECLS
  * or no HW sync source is used. */
 #define AUDIO_PARAMETER_STREAM_HW_AV_SYNC "hw_av_sync"
 
+/* Query handle fm parameter*/
+#define AUDIO_PARAMETER_KEY_HANDLE_FM "handle_fm"
+
+/* Query fm volume */
+#define AUDIO_PARAMETER_KEY_FM_VOLUME "fm_volume"
+
 /**
  * audio codec parameters
  */
