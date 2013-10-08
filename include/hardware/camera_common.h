@@ -174,7 +174,8 @@ typedef struct camera_info {
      *
      */
     const camera_metadata_t *static_camera_characteristics;
-} camera_info_t;
+
+} _camera_info_t;
 
 /**
  * camera_device_status_t:

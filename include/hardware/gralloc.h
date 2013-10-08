@@ -346,6 +346,54 @@ static inline int gralloc_close(struct alloc_device_t* device) {
     return device->common.close(&device->common);
 }
 
+#ifdef MTK_MT6589
+
+#define GRALLOC_HARDWARE_EXTRA "extra"
+
+// mtk extra buffer usage flags
+enum {
+    // BYTE#2 for S3D control
+    EXTRA_USAGE_S3D_UNKNOWN        = 0x00100000,    // for content layout
+    EXTRA_USAGE_S3D_SIDE_BY_SIDE   = 0x00200000,
+    EXTRA_USAGE_S3D_TOP_AND_BOTTOM = 0x00400000,
+    EXTRA_USAGE_S3D_LR_SWAPPED     = 0x00800000,
+
+    EXTRA_USAGE_S3D_RESERVED_BIT0  = 0x00010000,    // reserved bits
+    EXTRA_USAGE_S3D_RESERVED_BIT1  = 0x00020000,
+    EXTRA_USAGE_S3D_RESERVED_BIT2  = 0x00040000,
+    EXTRA_USAGE_S3D_RESERVED_BIT3  = 0x00080000,
+
+    // for init
+    EXTRA_USAGE_INIT_VALUE         = EXTRA_USAGE_S3D_UNKNOWN,
+};
+
+typedef struct extra_device_t {
+    struct hw_device_t common;
+
+    /*
+     * (*getIonFd)() is called for getting ion share fd from buffer handle
+     * It should return the beginning index of native_handle.data[]
+     * for ion shard fds and number of ion share fds
+     */
+
+    int (*getIonFd)(struct extra_device_t* dev,
+            buffer_handle_t handle, int *idx, int *num);
+
+    void* reserved_proc[7];
+} extra_device_t;
+
+static inline int gralloc_extra_open(const struct hw_module_t* module,
+        struct extra_device_t** device) {
+    return module->methods->open(module,
+            GRALLOC_HARDWARE_EXTRA, (struct hw_device_t**)device);
+}
+
+static inline int gralloc_extra_close(struct extra_device_t* device) {
+    return device->common.close(&device->common);
+}
+
+#endif // MTK_MT6589
+
 __END_DECLS
 
 #endif  // ANDROID_GRALLOC_INTERFACE_H
