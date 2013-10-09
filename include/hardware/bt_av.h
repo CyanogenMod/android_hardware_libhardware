@@ -47,12 +47,18 @@ typedef void (* btav_connection_state_callback)(btav_connection_state_t state,
 typedef void (* btav_audio_state_callback)(btav_audio_state_t state, 
                                                bt_bdaddr_t *bd_addr);
 
+/** Callback for connection priority of device for incoming connection
+ * btav_connection_priority_t
+ */
+typedef void (* btav_connection_priority_callback)(bt_bdaddr_t *bd_addr);
+
 /** BT-AV callback structure. */
 typedef struct {
     /** set to sizeof(btav_callbacks_t) */
     size_t      size;
     btav_connection_state_callback  connection_state_cb;
     btav_audio_state_callback audio_state_cb;
+    btav_connection_priority_callback connection_priority_cb;
 } btav_callbacks_t;
 
 /** 
@@ -83,6 +89,9 @@ typedef struct {
 
     /** Closes the interface. */
     void  (*cleanup)( void );
+
+    /** Send priority of device to stack*/
+    void (*allow_connection)( int is_valid );
 } btav_interface_t;
 
 __END_DECLS
