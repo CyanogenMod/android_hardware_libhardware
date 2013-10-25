@@ -529,6 +529,13 @@ struct audio_hw_device {
      */
     int (*set_master_volume)(struct audio_hw_device *dev, float volume);
 
+#ifdef HTC_JB41_JB42_AUDIO_BLOB
+    /**
+     * Unknown function that is NULL anyway. HTC what are you doing?
+     */
+    int (*unknown_func)(void);
+#endif
+
 #ifndef ICS_AUDIO_BLOB
     /**
      * Get the current master volume value for the HAL, if the HAL supports
