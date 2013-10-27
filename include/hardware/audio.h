@@ -673,6 +673,7 @@ struct audio_hw_device {
      * method may leave it set to NULL.
      */
     int (*get_master_mute)(struct audio_hw_device *dev, bool *mute);
+#endif
 };
 typedef struct audio_hw_device audio_hw_device_t;
 
