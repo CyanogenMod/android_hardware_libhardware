@@ -453,6 +453,11 @@ struct audio_policy_service_ops {
                                     audio_format_t *pFormat,
                                     audio_channel_mask_t *pChannelMask);
 
+#if defined(HTC_TEGRA_AUDIO) && defined(MR1_AUDIO_BLOB)
+    void (*unknown_function)(void *service);
+    int (*getclientPID)(void *service);
+#endif
+
 };
 
 /**********************************************************************/
