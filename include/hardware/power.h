@@ -52,7 +52,12 @@ typedef enum {
      */
     POWER_HINT_VIDEO_ENCODE = 0x00000003,
     POWER_HINT_VIDEO_DECODE = 0x00000004,
-    POWER_HINT_LOW_POWER = 0x00000005
+    POWER_HINT_LOW_POWER = 0x00000005,
+
+    POWER_HINT_CPU_BOOST    = 0x00000010,
+    POWER_HINT_AUDIO        = 0x00000020,
+    POWER_HINT_SET_PROFILE  = 0x00000030
+
 } power_hint_t;
 
 typedef enum {
@@ -130,6 +135,12 @@ typedef struct power_module {
      *     is intended to save battery at the cost of performance. The data
      *     parameter is non-zero when low power mode is activated, and zero
      *     when deactivated.
+     *
+     * POWER_HINT_CPU_BOOST
+     *
+     *     An operation is happening where it would be ideal for the CPU to
+     *     be boosted for a specific duration. The data parameter is an
+     *     integer value of the boost duration in microseconds.
      *
      * A particular platform may choose to ignore any hint.
      *
