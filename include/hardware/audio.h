@@ -56,7 +56,11 @@ __BEGIN_DECLS
 #define AUDIO_DEVICE_API_VERSION_0_0 HARDWARE_DEVICE_API_VERSION(0, 0)
 #define AUDIO_DEVICE_API_VERSION_1_0 HARDWARE_DEVICE_API_VERSION(1, 0)
 #define AUDIO_DEVICE_API_VERSION_2_0 HARDWARE_DEVICE_API_VERSION(2, 0)
+#ifndef ICS_AUDIO_BLOB
 #define AUDIO_DEVICE_API_VERSION_CURRENT AUDIO_DEVICE_API_VERSION_2_0
+#else
+#define AUDIO_DEVICE_API_VERSION_CURRENT AUDIO_DEVICE_API_VERSION_1_0
+#endif
 
 /**
  * List of known audio HAL modules. This is the base name of the audio HAL
@@ -654,6 +658,7 @@ struct audio_hw_device {
     /** This method dumps the state of the audio hardware */
     int (*dump)(const struct audio_hw_device *dev, int fd);
 
+#ifndef ICS_AUDIO_BLOB
     /**
      * set the audio mute status for all audio activities.  If any value other
      * than 0 is returned, the software mixer will emulate this capability.
