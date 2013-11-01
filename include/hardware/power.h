@@ -64,10 +64,17 @@ typedef enum {
     POWER_HINT_LOW_POWER = 0x00000005,
     POWER_HINT_SUSTAINED_PERFORMANCE = 0x00000006,
     POWER_HINT_VR_MODE = 0x00000007
+
+    POWER_HINT_CPU_BOOST    = 0x00000010,
+    POWER_HINT_LAUNCH_BOOST = 0x00000011,
+    POWER_HINT_AUDIO        = 0x00000020,
+    POWER_HINT_SET_PROFILE  = 0x00000030
+
 } power_hint_t;
 
 typedef enum {
-    POWER_FEATURE_DOUBLE_TAP_TO_WAKE = 0x00000001
+    POWER_FEATURE_DOUBLE_TAP_TO_WAKE = 0x00000001,
+    POWER_FEATURE_SUPPORTED_PROFILES = 0x00001000
 } feature_t;
 
 /*
@@ -154,6 +161,15 @@ typedef struct {
      */
     power_state_voter_t *voters;
 } power_state_platform_sleep_state_t;
+
+/**
+ * Process info, passed as an opaque handle when
+ * using POWER_HINT_LAUNCH_BOOST.
+ */
+typedef struct launch_boost_info {
+    pid_t pid;
+    const char* packageName;
+} launch_boost_info_t;
 
 /**
  * Every hardware module must have a data structure named HAL_MODULE_INFO_SYM
@@ -247,6 +263,12 @@ typedef struct power_module {
      *     device can sustain it. The data parameter is non-zero when the mode
      *     is activated and zero when deactivated.
      *
+     * POWER_HINT_CPU_BOOST
+     *
+     *     An operation is happening where it would be ideal for the CPU to
+     *     be boosted for a specific duration. The data parameter is an
+     *     integer value of the boost duration in microseconds.
+     *
      * A particular platform may choose to ignore any hint.
      *
      * availability: version 0.2
@@ -268,6 +290,12 @@ typedef struct power_module {
      *
      */
     void (*setFeature)(struct power_module *module, feature_t feature, int state);
+
+    /*
+     * (*getFeature) is called to get the current value of a particular
+     * feature or capability from the hardware or PowerHAL
+     */
+    int (*getFeature)(struct power_module *module, feature_t feature);
 
     /*
      * Platform-level sleep state stats:
@@ -326,7 +354,6 @@ typedef struct power_module {
     int (*get_voter_list)(struct power_module *module, size_t *voter);
 
 } power_module_t;
-
 
 __END_DECLS
 
