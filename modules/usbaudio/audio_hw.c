@@ -246,7 +246,7 @@ static ssize_t out_write(struct audio_stream_out *stream, const void* buffer,
     pthread_mutex_unlock(&out->dev->lock);
 
 #ifdef USE_MMAP
-    return ret? ret: bytes;
+    return ret == 0 ? bytes : ret;
 #else
     return bytes;
 #endif
