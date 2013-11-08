@@ -92,6 +92,12 @@ typedef struct {
 
     /** Send priority of device to stack*/
     void (*allow_connection)( int is_valid );
+
+    /** Checks if peer_device is src */
+    bt_status_t (*is_src)( bt_bdaddr_t *bd_addr );
+
+    /** Suspends Stream only in A2DP SINK */
+    void (*suspend_sink)( void );
 } btav_interface_t;
 
 __END_DECLS
