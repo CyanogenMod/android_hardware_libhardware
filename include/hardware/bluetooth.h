@@ -298,6 +298,8 @@ typedef void (*device_found_callback)(int num_properties,
 /** Discovery state changed callback */
 typedef void (*discovery_state_changed_callback)(bt_discovery_state_t state);
 
+/** wake state changed callback */
+typedef void (*wake_state_changed_callback)(bt_state_t state);
 /** Bluetooth Legacy PinKey Request callback */
 typedef void (*pin_request_callback)(bt_bdaddr_t *remote_bd_addr,
                                         bt_bdname_t *bd_name, uint32_t cod, uint8_t secure);
@@ -370,6 +372,7 @@ typedef struct {
     remote_device_properties_callback remote_device_properties_cb;
     device_found_callback device_found_cb;
     discovery_state_changed_callback discovery_state_changed_cb;
+    wake_state_changed_callback wake_state_changed_cb;
     pin_request_callback pin_request_cb;
     ssp_request_callback ssp_request_cb;
     bond_state_changed_callback bond_state_changed_cb;
