@@ -316,6 +316,7 @@ typedef struct gralloc_module_t {
 typedef struct alloc_device_t {
     struct hw_device_t common;
 
+#ifdef QCOM_BSP
     /*
      * (*allocSize)() Allocates a buffer in graphic memory with the requested
      * bufferSize parameter and returns a buffer_handle_t and the stride in
@@ -328,6 +329,7 @@ typedef struct alloc_device_t {
     int (*allocSize)(struct alloc_device_t* dev,
             int w, int h, int format, int usage,
             buffer_handle_t* handle, int* stride, int bufferSize);
+#endif
 
     /* 
      * (*alloc)() Allocates a buffer in graphic memory with the requested
