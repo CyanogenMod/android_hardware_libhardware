@@ -128,13 +128,22 @@ struct audio_policy {
 
     /* request an output appropriate for playback of the supplied stream type and
      * parameters */
+#ifdef ICS_AUDIO_BLOB
+    audio_io_handle_t (*get_output)(struct audio_policy *pol,
+                                    audio_stream_type_t stream,
+                                    uint32_t samplingRate,
+                                    audio_format_t format,
+                                    audio_channel_mask_t channelMask,
+                                    audio_output_flags_t flags);
+#endif
+
     audio_io_handle_t (*get_output)(struct audio_policy *pol,
                                     audio_stream_type_t stream,
                                     uint32_t samplingRate,
                                     audio_format_t format,
                                     audio_channel_mask_t channelMask,
                                     audio_output_flags_t flags,
-                                    const audio_offload_info_t *offloadInfo);
+				    const audio_offload_info_t *offloadInfo);
 
     /* indicates to the audio policy manager that the output starts being used
      * by corresponding stream. */
@@ -393,6 +402,17 @@ struct audio_policy_service_ops {
      *
      * Same as open_output() but specifying a specific HW module on which the output must be opened.
      */
+#ifdef ICS_AUDIO_BLOB
+    audio_io_handle_t (*open_output_on_module)(void *service,
+                                     audio_module_handle_t module,
+                                     audio_devices_t *pDevices,
+                                     uint32_t *pSamplingRate,
+                                     audio_format_t *pFormat,
+                                     audio_channel_mask_t *pChannelMask,
+                                     uint32_t *pLatencyMs,
+                                     audio_output_flags_t flags);
+#endif
+
     audio_io_handle_t (*open_output_on_module)(void *service,
                                      audio_module_handle_t module,
                                      audio_devices_t *pDevices,
@@ -401,7 +421,7 @@ struct audio_policy_service_ops {
                                      audio_channel_mask_t *pChannelMask,
                                      uint32_t *pLatencyMs,
                                      audio_output_flags_t flags,
-                                     const audio_offload_info_t *offloadInfo);
+				     const audio_offload_info_t *offloadInfo);
 
     /* Opens an audio input on a particular HW module.
      *
