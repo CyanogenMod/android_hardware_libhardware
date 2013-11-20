@@ -133,8 +133,11 @@ struct audio_policy {
                                     uint32_t samplingRate,
                                     audio_format_t format,
                                     audio_channel_mask_t channelMask,
-                                    audio_output_flags_t flags,
-                                    const audio_offload_info_t *offloadInfo);
+                                    audio_output_flags_t flags
+#ifndef ICS_AUDIO_BLOB
+				    ,const audio_offload_info_t *offloadInfo
+#endif
+				    );
 
     /* indicates to the audio policy manager that the output starts being used
      * by corresponding stream. */
@@ -248,9 +251,11 @@ struct audio_policy {
     /* dump state */
     int (*dump)(const struct audio_policy *pol, int fd);
 
+#ifndef ICS_AUDIO_BLOB
     /* check if offload is possible for given sample rate, bitrate, duration, ... */
     bool (*is_offload_supported)(const struct audio_policy *pol,
                                 const audio_offload_info_t *info);
+#endif
 };
 
 /* audio hw module handle used by load_hw_module(), open_output_on_module()
@@ -400,8 +405,11 @@ struct audio_policy_service_ops {
                                      audio_format_t *pFormat,
                                      audio_channel_mask_t *pChannelMask,
                                      uint32_t *pLatencyMs,
-                                     audio_output_flags_t flags,
-                                     const audio_offload_info_t *offloadInfo);
+                                     audio_output_flags_t flags
+#ifndef ICS_AUDIO_BLOB		     
+				     ,const audio_offload_info_t *offloadInfo
+#endif
+				     );
 
     /* Opens an audio input on a particular HW module.
      *
