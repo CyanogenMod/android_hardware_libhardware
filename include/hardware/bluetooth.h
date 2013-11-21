@@ -134,7 +134,6 @@ typedef struct
    char name[256]; // what's the maximum length
 } bt_service_record_t;
 
-
 /** Bluetooth Remote Version info */
 typedef struct
 {
@@ -364,6 +363,20 @@ typedef void (*bond_state_changed_callback)(bt_status_t status,
 /** Bluetooth ACL connection state changed callback */
 typedef void (*acl_state_changed_callback)(bt_status_t status, bt_bdaddr_t *remote_bd_addr,
                                             bt_acl_state_t state);
+/**  Callback invoked when write rssi threshold command complete */
+typedef void (*le_lpp_write_rssi_thresh_callback) (bt_bdaddr_t *bda, int status);
+
+/**  Callback invoked when read rssi threshold command complete */
+typedef void (*le_lpp_read_rssi_thresh_callback)(bt_bdaddr_t *bda, int low, int upper,
+                                                 int alert, int status);
+
+/**  Callback invoked when enable or disable rssi monitor command complete */
+typedef void (*le_lpp_enable_rssi_monitor_callback)(bt_bdaddr_t *bda,
+                                                    int enable, int status);
+
+/**  Callback triggered when rssi threshold event reported */
+typedef void (*le_lpp_rssi_threshold_evt_callback)(bt_bdaddr_t *bda,
+                                                   int evt_type, int rssi);
 
 typedef enum {
     ASSOCIATE_JVM,
@@ -412,6 +425,10 @@ typedef struct {
     dut_mode_recv_callback dut_mode_recv_cb;
     le_test_mode_callback le_test_mode_cb;
     energy_info_callback energy_info_cb;
+    le_lpp_write_rssi_thresh_callback          le_lpp_write_rssi_thresh_cb;
+    le_lpp_read_rssi_thresh_callback           le_lpp_read_rssi_thresh_cb;
+    le_lpp_enable_rssi_monitor_callback        le_lpp_enable_rssi_monitor_cb;
+    le_lpp_rssi_threshold_evt_callback         le_lpp_rssi_threshold_evt_cb;
 } bt_callbacks_t;
 
 typedef void (*alarm_cb)(void *data);
@@ -460,6 +477,9 @@ typedef struct {
      * to the implemenation of this interface.
      */
     int (*init)(bt_callbacks_t* callbacks );
+
+    /*adds callbacks for QC related calls to the btif env*/
+    int (*initq)(bt_callbacks_t* callbacks);
 
     /** Enable Bluetooth. */
     int (*enable)(void);
@@ -565,6 +585,11 @@ typedef struct {
     int (*read_energy_info)();
     /** BT stack Test interface */
     const void* (*get_testapp_interface)(int test_app_profile);
+    /** rssi monitoring */
+    bt_status_t (*le_lpp_write_rssi_threshold)(const bt_bdaddr_t *remote_bda, char min, char max);
+    bt_status_t (*le_lpp_enable_rssi_monitor)(const bt_bdaddr_t *remote_bda, int enable);
+    bt_status_t (*le_lpp_read_rssi_threshold)(const bt_bdaddr_t *remote_bda);
+
 } bt_interface_t;
 
 /** TODO: Need to add APIs for Service Discovery, Service authorization and
