@@ -38,13 +38,13 @@ typedef enum {
 /** Callback for connection state change.
  *  state will have one of the values from btav_connection_state_t
  */
-typedef void (* btav_connection_state_callback)(btav_connection_state_t state, 
+typedef void (* btav_connection_state_callback)(btav_connection_state_t state,
                                                     bt_bdaddr_t *bd_addr);
 
 /** Callback for audiopath state change.
  *  state will have one of the values from btav_audio_state_t
  */
-typedef void (* btav_audio_state_callback)(btav_audio_state_t state, 
+typedef void (* btav_audio_state_callback)(btav_audio_state_t state,
                                                bt_bdaddr_t *bd_addr);
 
 /** Callback for connection priority of device for incoming connection
@@ -52,6 +52,11 @@ typedef void (* btav_audio_state_callback)(btav_audio_state_t state,
  */
 typedef void (* btav_connection_priority_callback)(bt_bdaddr_t *bd_addr);
 
+/** Callback for requesting audio focus.
+ *  enable will be either TRUE or FALSE
+ */
+typedef void (* btav_audio_focus_request_callback)(int enable,
+                                               bt_bdaddr_t *bd_addr);
 /** BT-AV callback structure. */
 typedef struct {
     /** set to sizeof(btav_callbacks_t) */
@@ -59,17 +64,18 @@ typedef struct {
     btav_connection_state_callback  connection_state_cb;
     btav_audio_state_callback audio_state_cb;
     btav_connection_priority_callback connection_priority_cb;
+    btav_audio_focus_request_callback audio_focus_request_cb;
 } btav_callbacks_t;
 
-/** 
+/**
  * NOTE:
  *
  * 1. AVRCP 1.0 shall be supported initially. AVRCP passthrough commands
- *    shall be handled internally via uinput 
+ *    shall be handled internally via uinput
  *
  * 2. A2DP data path shall be handled via a socket pipe between the AudioFlinger
  *    android_audio_hw library and the Bluetooth stack.
- * 
+ *
  */
 /** Represents the standard BT-AV interface. */
 typedef struct {
@@ -98,6 +104,12 @@ typedef struct {
 
     /** Suspends Stream only in A2DP SINK */
     void (*suspend_sink)( void );
+
+    /** Resumes Stream only in A2DP SINK */
+    void (*resume_sink)( void );
+
+    /** Send audio focus status to bluedroid*/
+    void (*audio_focus_status)( int is_enable );
 } btav_interface_t;
 
 __END_DECLS
