@@ -53,6 +53,8 @@ __BEGIN_DECLS
 #define BT_PROFILE_GATT_ID "gatt"
 #define BT_PROFILE_AV_RC_ID "avrcp"
 
+#define WIPOWER_PROFILE_ID "wipower"
+
 /** Bluetooth Address */
 typedef struct {
     uint8_t address[6];
@@ -69,6 +71,14 @@ typedef enum {
     BT_SCAN_MODE_CONNECTABLE,
     BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE
 } bt_scan_mode_t;
+
+/*LE ADV modes*/
+typedef enum {
+    BLE_ADV_MODE_NONE,
+    BLE_ADV_IND_GENERAL_CONNECTABLE,
+    BLE_ADV_IND_LIMITED_CONNECTABLE,
+    BLE_ADV_DIR_CONNECTABLE
+} bt_ble_adv_mode_t;
 
 /** Bluetooth Adapter State */
 typedef enum {
@@ -229,6 +239,8 @@ typedef enum {
 
     BT_PROPERTY_REMOTE_VERSION_INFO,
 
+    BT_PROPERTY_ADAPTER_BLE_ADV_MODE,
+
     BT_PROPERTY_REMOTE_DEVICE_TIMESTAMP = 0xFF,
 } bt_property_type_t;
 
@@ -326,6 +338,8 @@ typedef void (*bond_state_changed_callback)(bt_status_t status,
 typedef void (*acl_state_changed_callback)(bt_status_t status, bt_bdaddr_t *remote_bd_addr,
                                             bt_acl_state_t state);
 
+typedef void (*le_adv_enable_callback)(uint8_t enable, uint8_t advType);
+
 typedef void (*le_extended_scan_result_callback)(bt_bdaddr_t* bda, int rssi, uint8_t* adv_data);
 
 /**  Callback invoked when write rssi threshold command complete */
@@ -386,6 +400,7 @@ typedef struct {
     dut_mode_recv_callback dut_mode_recv_cb;
     hci_event_recv_callback hci_event_recv_cb;
     le_test_mode_callback le_test_mode_cb;
+    le_adv_enable_callback le_adv_enable_cb;
     le_extended_scan_result_callback le_extended_scan_result_cb;
     le_lpp_write_rssi_thresh_callback          le_lpp_write_rssi_thresh_cb;
     le_lpp_read_rssi_thresh_callback           le_lpp_read_rssi_thresh_cb;
@@ -422,7 +437,7 @@ typedef struct {
      */
     int (*init)(bt_callbacks_t* callbacks );
 
-    /*adds callbacks for QC related calls to the btif env*/
+    /*adds callbacks for Q related calls to the btif env*/
     int (*initq)(bt_callbacks_t* callbacks);
 
     /** Enable Bluetooth. */
@@ -508,6 +523,16 @@ typedef struct {
     /** BLE Test Mode APIs */
     /* opcode MUST be one of: LE_Receiver_Test, LE_Transmitter_Test, LE_Test_End */
     int (*le_test_mode)(uint16_t opcode, uint8_t *buf, uint8_t len);
+
+    int (*le_set_adv_params) (uint16_t int_min, uint16_t int_max, const bt_bdaddr_t *bd_addr, uint8_t ad_type);
+
+    int (*le_set_adv_data_mask) (uint16_t dMask);
+
+    int (*le_set_scan_resp_mask) (uint16_t dMask);
+
+    int (*le_set_manu_data) (uint8_t *buf, uint8_t len);
+
+    int (*le_set_service_data) (uint8_t *buf, uint8_t len);
 
     /* enable or disable bluetooth HCI snoop log */
     int (*config_hci_snoop_log)(uint8_t enable);
