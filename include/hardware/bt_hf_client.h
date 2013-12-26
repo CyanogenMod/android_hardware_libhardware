@@ -254,6 +254,11 @@ typedef void (* bthf_client_in_band_ring_tone_callback) (bthf_client_in_band_rin
  */
 typedef void (* bthf_client_last_voice_tag_number_callback) (const char *number);
 
+/**
+ * Callback for sending ring indication to app
+ */
+typedef void (* bthf_client_ring_indication_callback) (void);
+
 /** BT-HF callback structure. */
 typedef struct {
     /** set to sizeof(BtHfClientCallbacks) */
@@ -278,6 +283,7 @@ typedef struct {
     bthf_client_subscriber_info_callback   subscriber_info_cb;
     bthf_client_in_band_ring_tone_callback in_band_ring_tone_cb;
     bthf_client_last_voice_tag_number_callback last_voice_tag_number_callback;
+    bthf_client_ring_indication_callback   ring_indication_cb;
 } bthf_client_callbacks_t;
 
 /** Represents the standard BT-HF interface. */
