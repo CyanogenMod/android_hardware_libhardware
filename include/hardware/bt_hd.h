@@ -116,7 +116,7 @@ typedef struct {
     bt_status_t (*send_report)(bthd_report_type_t type, uint8_t id, uint16_t len, uint8_t *p_data);
 
     /** notifies error for invalid SET_REPORT */
-    bt_status_t (*report_error)(void);
+    bt_status_t (*report_error)(uint8_t error);
 
     /** send Virtual Cable Unplug  */
     bt_status_t (*virtual_cable_unplug)(void);
