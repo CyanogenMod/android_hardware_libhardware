@@ -156,6 +156,12 @@ enum {
      * Returns a mask of supported display types.
      */
     HWC_DISPLAY_TYPES_SUPPORTED         = 2,
+
+    /*
+     * Returns the maximum supported width for virtual displays that need
+     * to use WriteBack.
+     */
+    HWC_MAX_WRITEBACK_WIDTH                = 3,
 };
 
 /* display attributes returned by getDisplayAttributes() */
