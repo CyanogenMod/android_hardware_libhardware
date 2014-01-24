@@ -58,7 +58,7 @@ unsigned short rect_voltage_set;
 unsigned short rect_voltage_max;
 unsigned char alert;
 unsigned short rfu1;
-unsigned short rfu2;
+unsigned char rfu2;
 
 }__attribute__((packed)) wipower_dyn_data_t;
 
@@ -72,6 +72,8 @@ typedef void (*wipower_alerts)(unsigned char alert);
 typedef void (*wipower_dynamic_data)(wipower_dyn_data_t* alert_data);
 
 
+typedef void (*wipower_power_apply)(unsigned char power_flag);
+
 /** Bluetooth DM callback structure. */
 typedef struct {
     /** set to sizeof(wipower_callbacks_t) */
@@ -79,6 +81,7 @@ typedef struct {
     wipower_state_changed_callback wipower_state_changed_cb;
     wipower_alerts wipower_alert;
     wipower_dynamic_data wipower_data;
+    wipower_power_apply wipower_power_event;
 } wipower_callbacks_t;
 
 
@@ -87,8 +90,11 @@ typedef struct {
     /** set to sizeof(wipower_interface_t) */
     size_t size;
 
+    /** Initialize Wipower modules*/
+    int (*init)(wipower_callbacks_t *wp_callbacks);
+
     /** Enable/Disable Wipower charging */
-    int (*enable)(wipower_callbacks_t *wp_callbacks, bool enable);
+    int (*enable)(bool enable);
 
     int (*set_current_limit)(short value);
 
