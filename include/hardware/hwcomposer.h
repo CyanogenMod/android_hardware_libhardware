@@ -192,6 +192,12 @@ typedef struct hwc_layer_1 {
              */
             hwc_region_t visibleRegionScreen;
 
+#ifdef QCOM_BSP
+            /* Region of the layer changed in the source buffer since
+             * previous frame */
+            hwc_rect_t dirtyRect;
+#endif
+
             /* Sync fence object that will be signaled when the buffer's
              * contents are available. May be -1 if the contents are already
              * available. This field is only valid during set(), and should be
