@@ -153,6 +153,16 @@ typedef struct
     uint8_t activity_energy_info_supported;
 }bt_local_le_features_t;
 
+/* Bluetooth Remote DI record */
+typedef struct
+{
+    int       vendor;
+    int       vendor_id_source;
+    int       product;
+    int       version;
+    int       spec_id;
+} bt_remote_di_record_t;
+
 /* Bluetooth Adapter and Remote Device property types */
 typedef enum {
     /* Properties common to both adapter and remote device */
@@ -241,6 +251,14 @@ typedef enum {
      * Data type   - bt_local_le_features_t.
      */
     BT_PROPERTY_LOCAL_LE_FEATURES,
+
+    /* Properties unique to remote device */
+    /**
+     * Description - DI Record of the remote device
+     * Access mode - GET
+     * Data type   - bt_remote_di_record_t.
+     */
+    BT_PROPERTY_REMOTE_DI_RECORD = 0xFE,
 
     BT_PROPERTY_REMOTE_DEVICE_TIMESTAMP = 0xFF,
 } bt_property_type_t;
