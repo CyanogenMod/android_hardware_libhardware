@@ -16,7 +16,7 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-ifeq ($(TARGET_QCOM_AUDIO_VARIANT),caf)
+ifneq ($(filter caf caf%,$(TARGET_QCOM_AUDIO_VARIANT)),)
 ifeq ($(BOARD_USES_ALSA_AUDIO),true)
 LOCAL_CFLAGS += -DUSE_MMAP
 endif
