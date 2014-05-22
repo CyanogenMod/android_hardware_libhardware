@@ -439,7 +439,8 @@ static inline size_t audio_stream_frame_size(const struct audio_stream *s)
     size_t chan_samp_sz;
     audio_format_t format = s->get_format(s);
 
-    if (audio_is_linear_pcm(format)) {
+    if (audio_is_linear_pcm(format) &&
+            format != AUDIO_FORMAT_PCM_8_24_BIT) {
         chan_samp_sz = audio_bytes_per_sample(format);
         return popcount(s->get_channels(s)) * chan_samp_sz;
     }
