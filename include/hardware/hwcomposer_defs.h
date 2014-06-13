@@ -210,6 +210,44 @@ enum {
     HWC_DISPLAY_VIRTUAL_BIT     = 1 << HWC_DISPLAY_VIRTUAL,
 };
 
+#ifdef MTK_MT6589
+/*
+ * hwc_layer_1_t::flags values extension
+ * Need to check if these values are conflict to original AOSP
+ */
+enum {
+    /* HWC_SECURE_LAYER is set by SurfaceFlinger to indicat that the HAL
+     * this layer is protected
+     */
+    HWC_SECURE_LAYER   = 0x10000000,
+
+    /*
+     * HWC_DIRTY_LAYER is set by SurfaceFlinger to indicate that the HAL
+     * this layer has updated content.
+     */
+    HWC_DIRTY_LAYER    = 0x20000000,
+
+    /*
+     * HWC_DIM_LAYER is set by SurfaceFlinger to indicate that the HAL
+     * this layer is used as dim layer if HWC can handle dim effect
+     */
+    HWC_DIM_LAYER      = 0x40000000,
+};
+
+/*
+ * hwc_display_contents_1_t::flags values extension
+ * Need to check if these values are conflict to original AOSP
+ */
+enum {
+    HWC_SWAP_REQUIRED         = 0x20000000,
+    HWC_LAYERSCREENSHOT_EXIST = 0x40000000,
+    HWC_SCREEN_FROZEN         = 0x80000000,
+
+    // HWC_ORIENTATION_MASK is using third byte for external orientation
+    // Added for HWC_DEVICE_API_VERSION_1_0
+    HWC_ORIENTATION_MASK      = 0x00FF0000,
+};
+#endif
 /*****************************************************************************/
 
 __END_DECLS
