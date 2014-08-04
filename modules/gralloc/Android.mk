@@ -30,8 +30,4 @@ LOCAL_SRC_FILES := 	\
 LOCAL_MODULE := gralloc.default
 LOCAL_CFLAGS:= -DLOG_TAG=\"gralloc\"
 
-ifeq ($(BOARD_HTC_3D_SUPPORT),true)
-   LOCAL_CFLAGS += -DHTC_3D_SUPPORT
-endif
-
 include $(BUILD_SHARED_LIBRARY)
