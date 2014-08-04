@@ -38,13 +38,13 @@ typedef enum {
 /** Callback for connection state change.
  *  state will have one of the values from btav_connection_state_t
  */
-typedef void (* btav_connection_state_callback)(btav_connection_state_t state, 
+typedef void (* btav_connection_state_callback)(btav_connection_state_t state,
                                                     bt_bdaddr_t *bd_addr);
 
 /** Callback for audiopath state change.
  *  state will have one of the values from btav_audio_state_t
  */
-typedef void (* btav_audio_state_callback)(btav_audio_state_t state, 
+typedef void (* btav_audio_state_callback)(btav_audio_state_t state,
                                                bt_bdaddr_t *bd_addr);
 
 /** Callback for audio configuration change.
@@ -61,6 +61,11 @@ typedef void (* btav_audio_config_callback)(bt_bdaddr_t *bd_addr,
  */
 typedef void (* btav_connection_priority_callback)(bt_bdaddr_t *bd_addr);
 
+/** Callback for requesting audio focus.
+ *  enable will be either TRUE or FALSE
+ */
+typedef void (* btav_audio_focus_request_callback)(int enable,
+                                                bt_bdaddr_t *bd_addr);
 /** BT-AV callback structure. */
 typedef struct {
     /** set to sizeof(btav_callbacks_t) */
@@ -69,17 +74,18 @@ typedef struct {
     btav_audio_state_callback audio_state_cb;
     btav_audio_config_callback audio_config_cb;
     btav_connection_priority_callback connection_priority_cb;
+    btav_audio_focus_request_callback audio_focus_request_cb;
 } btav_callbacks_t;
 
-/** 
+/**
  * NOTE:
  *
  * 1. AVRCP 1.0 shall be supported initially. AVRCP passthrough commands
- *    shall be handled internally via uinput 
+ *    shall be handled internally via uinput
  *
  * 2. A2DP data path shall be handled via a socket pipe between the AudioFlinger
  *    android_audio_hw library and the Bluetooth stack.
- * 
+ *
  */
 /** Represents the standard BT-AV interface.
  *  Used for both the A2DP source and sink interfaces.
@@ -105,6 +111,34 @@ typedef struct {
     /** Send priority of device to stack*/
     void (*allow_connection)( int is_valid );
 } btav_interface_t;
+
+typedef struct {
+
+    /** set to sizeof(btav_interface_t) */
+    size_t          size;
+    /**
+     * Register the BtAv callbacks
+     */
+    bt_status_t (*init)( btav_callbacks_t* callbacks );
+
+    /** connect to headset */
+    bt_status_t (*connect)( bt_bdaddr_t *bd_addr );
+
+    /** dis-connect from headset */
+    bt_status_t (*disconnect)( bt_bdaddr_t *bd_addr );
+
+    /** Closes the interface. */
+    void  (*cleanup)( void );
+
+    /* suspend stream for A2DP Sink */
+    void (*suspend_sink)( void );
+
+    /* resume stream for A2DP Sink */
+    void (*resume_sink)( void );
+
+    /* inform audio focus state */
+    void (*audio_focus_status)( int is_enable );
+} btav_sink_interface_t;
 
 __END_DECLS
 
