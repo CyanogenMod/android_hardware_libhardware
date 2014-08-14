@@ -1,4 +1,7 @@
 /*
+ * Copyright (C) 2013-2014, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
+ *
  * Copyright (C) 2012 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -62,6 +65,11 @@ typedef void (* btav_audio_config_callback)(bt_bdaddr_t *bd_addr,
                                                 uint32_t sample_rate,
                                                 uint8_t channel_count);
 
+/** Callback for updating apps for A2dp multicast state.
+ */
+
+typedef void (* btav_is_multicast_enabled_callback)(int state);
+
 /** BT-AV callback structure. */
 typedef struct {
     /** set to sizeof(btav_callbacks_t) */
@@ -70,6 +78,7 @@ typedef struct {
     btav_audio_state_callback audio_state_cb;
     btav_audio_config_callback audio_config_cb;
     btav_connection_priority_callback connection_priority_cb;
+    btav_is_multicast_enabled_callback multicast_state_cb;
 } btav_callbacks_t;
 
 /** 
@@ -92,7 +101,8 @@ typedef struct {
     /**
      * Register the BtAv callbacks
      */
-    bt_status_t (*init)( btav_callbacks_t* callbacks );
+    bt_status_t (*init)( btav_callbacks_t* callbacks , int max_a2dp_connections,
+                        int a2dp_multicast_state);
 
     /** connect to headset */
     bt_status_t (*connect)( bt_bdaddr_t *bd_addr );
@@ -104,7 +114,7 @@ typedef struct {
     void  (*cleanup)( void );
 
     /** Send priority of device to stack*/
-    void (*allowConnection)( int is_valid );
+    void (*allow_connection)( int is_valid , bt_bdaddr_t *bd_addr);
 } btav_interface_t;
 
 __END_DECLS
