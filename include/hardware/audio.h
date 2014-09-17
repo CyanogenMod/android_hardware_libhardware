@@ -166,6 +166,15 @@ __BEGIN_DECLS
 #define AUDIO_OFFLOAD_CODEC_DELAY_SAMPLES  "delay_samples"
 #define AUDIO_OFFLOAD_CODEC_PADDING_SAMPLES  "padding_samples"
 
+/** Structure to save buffer information for applying effects for
++ *  LPA buffers */
+struct buf_info {
+    int bufsize;
+    int nBufs;
+    int **buffers;
+};
+
+
 /**************************************/
 
 /* common audio stream parameters and operations */
@@ -320,6 +329,15 @@ struct audio_stream_out {
                                uint32_t *dsp_frames);
 
     /**
+     * start audio data rendering
+     */
+    int (*start)(struct audio_stream_out *stream);
+
+    /**
+     * stop audio data rendering
+     */
+    int (*stop)(struct audio_stream_out *stream);
+    /**
      * get the local time at which the next write to the audio driver will be presented.
      * The units are microseconds, where the epoch is decided by the local audio HAL.
      */
@@ -400,6 +418,28 @@ struct audio_stream_out {
     int (*get_presentation_position)(const struct audio_stream_out *stream,
                                uint64_t *frames, struct timespec *timestamp);
 
+    /**
+    * return the current timestamp after quering to the driver
+     */
+    int (*get_time_stamp)(const struct audio_stream_out *stream,
+                               uint64_t *time_stamp);
+    /**
+    * EOS notification from HAL to Player
+     */
+    int (*set_observer)(const struct audio_stream_out *stream,
+                               void *observer);
+    /**
+     * Get the physical address of the buffer allocated in the
+     * driver
+     */
+    int (*get_buffer_info) (const struct audio_stream_out *stream,
+                                struct buf_info **buf);
+    /**
+     * Check if next buffer is available. Waits until next buffer is
+     * available
+     */
+    int (*is_buffer_available) (const struct audio_stream_out *stream,
+                                     int *isAvail);
 };
 typedef struct audio_stream_out audio_stream_out_t;
 
@@ -695,6 +735,16 @@ static inline int audio_hw_device_close(struct audio_hw_device* device)
 }
 
 
+#ifdef __cplusplus
+/**
+ *Observer class to post the Events from HAL to Flinger
+*/
+class AudioEventObserver {
+public:
+    virtual ~AudioEventObserver() {}
+    virtual void postEOS(int64_t delayUs) = 0;
+};
+#endif
 __END_DECLS
 
 #endif  // ANDROID_AUDIO_INTERFACE_H
