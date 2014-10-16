@@ -33,6 +33,12 @@ __BEGIN_DECLS
  */
 #define POWER_HARDWARE_MODULE_ID "power"
 
+/**
+* This definition is used by Camera HAL during  camcorder recording.
+*
+*/
+#define HAS_MULTIMEDIA_HINTS
+
 /*
  * Power hint identifiers passed to (*powerHint)
  */
