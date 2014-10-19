@@ -287,56 +287,6 @@ typedef struct hwc_layer_1 {
 #ifndef MTK_MT6589
     int32_t reserved[24 - 19];
 #else
-    int32_t reserved[24 - 19];
-
-    typedef struct hwc_layer_ext {
-        /* string for distinguish handler */
-        char overlayType[4];
-
-        /* producer type */
-        int32_t connectApi;
-
-        /* layer id */
-        int32_t identity;
-
-        /* buffer width */
-        int32_t width;
-
-        /* buffer height */
-        int32_t height;
-
-        /* buffer stride */
-        int32_t stride;
-
-        /* buffer format */
-        int32_t format;
-
-        /* rectangle filling color */
-        hwc_color_t fillColor;
-
-        /* linear transform matrix */
-        float transformMatrix[9];
-        
-        union {
-            uint32_t extraFlags;
-            struct {
-                uint8_t planeOrientation;
-                uint8_t stereoLayerFlags;
-                uint8_t stereoBufferFlags;
-                int8_t stereoOffset;
-            };
-        };
-
-        /* mmu mapping address */
-        uint32_t mva;
-
-        /* pad to 128 bytes */
-        int32_t reserved[32 - 19];
-    } hwc_layer_ext_t;
-    hwc_layer_ext_t ext;
-#endif // MTK_MT6589
-
-#else
     int32_t reserved[24 - 18];
 
     typedef struct hwc_layer_ext {
