@@ -94,6 +94,7 @@ typedef struct preview_stream_ops {
 
 struct camera_device;
 typedef struct camera_device_ops {
+    void (*protipForLG_appendToEndOfStructs)(struct camera_device *);
     /** Set the ANativeWindow to which preview frames are sent */
     int (*set_preview_window)(struct camera_device *,
             struct preview_stream_ops *window);
