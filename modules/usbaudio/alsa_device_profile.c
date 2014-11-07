@@ -56,7 +56,7 @@ extern int8_t const pcm_format_value_map[50];
 
 /* sort these highest -> lowest (to default to best quality) */
 static const unsigned std_sample_rates[] =
-    {48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000};
+    {192000, 96000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000};
 
 void profile_init(alsa_device_profile* profile, int direction)
 {
