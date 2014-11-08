@@ -201,6 +201,11 @@ enum {
      */
     HWC_DISPLAY_DPI_X                       = 4,
     HWC_DISPLAY_DPI_Y                       = 5,
+    /* Indicates if the display is secure
+     * For HDMI/WFD if the sink supports HDCP, it will be true
+     * Primary panel is always considered secure
+     */
+    HWC_DISPLAY_SECURE                      = 6,
 };
 
 /* Allowed events for hwc_methods::eventControl() */
