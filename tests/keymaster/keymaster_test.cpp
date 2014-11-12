@@ -344,8 +344,8 @@ public:
         ASSERT_EQ(0, keymaster_open(mod, &sDevice))
                 << "Should be able to open the keymaster device";
 
-        ASSERT_EQ(KEYMASTER_MODULE_API_VERSION_0_2, mod->module_api_version)
-                << "Keymaster should implement API version 2";
+        ASSERT_EQ(KEYMASTER_MODULE_API_VERSION_0_3, mod->module_api_version)
+                << "Keymaster should implement API version 3";
 
         ASSERT_TRUE(sDevice->generate_keypair != NULL)
                 << "Should implement generate_keypair";
