@@ -166,6 +166,7 @@ __BEGIN_DECLS
 #define AUDIO_OFFLOAD_CODEC_DELAY_SAMPLES  "delay_samples"
 #define AUDIO_OFFLOAD_CODEC_PADDING_SAMPLES  "padding_samples"
 
+#ifdef QCOM_DIRECTTRACK
 /** Structure to save buffer information for applying effects for
 + *  LPA buffers */
 struct buf_info {
@@ -173,7 +174,7 @@ struct buf_info {
     int nBufs;
     int **buffers;
 };
-
+#endif
 
 /**************************************/
 
@@ -328,6 +329,7 @@ struct audio_stream_out {
     int (*get_render_position)(const struct audio_stream_out *stream,
                                uint32_t *dsp_frames);
 
+#ifdef QCOM_DIRECTTRACK
     /**
      * start audio data rendering
      */
@@ -337,6 +339,8 @@ struct audio_stream_out {
      * stop audio data rendering
      */
     int (*stop)(struct audio_stream_out *stream);
+#endif
+
     /**
      * get the local time at which the next write to the audio driver will be presented.
      * The units are microseconds, where the epoch is decided by the local audio HAL.
@@ -418,6 +422,7 @@ struct audio_stream_out {
     int (*get_presentation_position)(const struct audio_stream_out *stream,
                                uint64_t *frames, struct timespec *timestamp);
 
+#ifdef QCOM_DIRECTTRACK
     /**
     * return the current timestamp after quering to the driver
      */
@@ -440,6 +445,7 @@ struct audio_stream_out {
      */
     int (*is_buffer_available) (const struct audio_stream_out *stream,
                                      int *isAvail);
+#endif
 };
 typedef struct audio_stream_out audio_stream_out_t;
 
@@ -734,7 +740,7 @@ static inline int audio_hw_device_close(struct audio_hw_device* device)
     return device->common.close(&device->common);
 }
 
-
+#ifdef QCOM_DIRECTTRACK
 #ifdef __cplusplus
 /**
  *Observer class to post the Events from HAL to Flinger
@@ -744,6 +750,7 @@ public:
     virtual ~AudioEventObserver() {}
     virtual void postEOS(int64_t delayUs) = 0;
 };
+#endif
 #endif
 __END_DECLS
 
