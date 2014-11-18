@@ -117,6 +117,9 @@ __BEGIN_DECLS
  * or no HW sync is available. */
 #define AUDIO_PARAMETER_HW_AV_SYNC "hw_av_sync"
 
+/* Device state*/
+#define AUDIO_PARAMETER_KEY_DEV_SHUTDOWN "dev_shutdown"
+
 /**
  *  audio stream parameters
  */
