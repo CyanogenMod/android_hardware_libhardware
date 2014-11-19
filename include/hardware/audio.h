@@ -743,6 +743,11 @@ struct audio_hw_device {
     int (*listen_set_parameters)(struct audio_hw_device *dev,
                                  const char *kv_pairs);
 #endif
+
+#ifdef MTK_HARDWARE
+    int (*SetAudioData)(struct audio_hw_device *dev,int par1,size_t len, void *ptr);
+    int (*GetAudioData)(struct audio_hw_device *dev,int par1,size_t len, void *ptr);
+#endif
 };
 typedef struct audio_hw_device audio_hw_device_t;
 
