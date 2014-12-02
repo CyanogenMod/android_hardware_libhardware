@@ -58,7 +58,6 @@ static inline enum pcm_format pcm_format_from_audio_format(audio_format_t format
 #endif
     case AUDIO_FORMAT_PCM_FLOAT:  /* there is no equivalent for float */
     default:
-        LOG_ALWAYS_FATAL("pcm_format_from_audio_format: invalid audio format %#x", format);
         return 0;
     }
 }
@@ -92,7 +91,6 @@ static inline audio_format_t audio_format_from_pcm_format(enum pcm_format format
         return AUDIO_FORMAT_PCM_32_BIT;
 #endif
     default:
-        LOG_ALWAYS_FATAL("audio_format_from_pcm_format: invalid pcm format %#x", format);
         return 0;
     }
 }
