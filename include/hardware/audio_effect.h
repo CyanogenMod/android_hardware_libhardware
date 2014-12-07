@@ -439,6 +439,7 @@ enum effect_command_e {
    EFFECT_CMD_SET_AUDIO_SOURCE,     // set the audio source (see audio.h, audio_source_t)
    EFFECT_CMD_OFFLOAD,              // set if effect thread is an offload one,
                                     // send the ioHandle of the effect thread
+   EFFECT_CMD_HW_ACC,
    EFFECT_CMD_FIRST_PROPRIETARY = 0x10000 // first proprietary command code
 };
 
