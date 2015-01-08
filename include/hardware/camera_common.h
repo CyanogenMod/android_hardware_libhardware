@@ -24,7 +24,8 @@
 #include <sys/types.h>
 #include <cutils/native_handle.h>
 #include <system/camera.h>
-#include <system/camera_vendor_tags.h>
+//#include <system/camera_vendor_tags.h>
+#include "../../../../system/media/camera/include/system/camera_vendor_tags.h"
 #include <hardware/hardware.h>
 #include <hardware/gralloc.h>
 
