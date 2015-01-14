@@ -146,6 +146,51 @@ typedef struct power_module {
                       void *data);
 } power_module_t;
 
+/**
+ * System performance profiles, may be set per-app. System should
+ * notify user when any profile other than BALANCED is in use.
+ *
+ * POWER_SAVE, BALANCED, and HIGH_PERFORMANCE are required for
+ * the trivial implementation. BIAS profiles are optional.
+ */
+typedef enum {
+    /*
+     * Power saving mode, large performance degradation.
+     * This mode should be linked with POWER_HINT_LOW_POWER.
+     */
+    PROFILE_POWER_SAVE          = 0x0,
+    /*
+     * Balanced profile, this is the default for normal operation
+     */
+    PROFILE_BALANCED            = 0x1,
+    /*
+     * Highest performance, highest power consumption.
+     */
+    PROFILE_HIGH_PERFORMANCE    = 0x2,
+    /*
+     * Bias towards low power consumption, some performance degradation.
+     * Should not cause major usability issues as PROFILE_POWER_SAVE would.
+     */
+    PROFILE_BIAS_POWER          = 0x3,
+    /*
+     * Bias towards higher performance, with higher power consumption expected.
+     * Should not cause severe battery drain as HIGH_PERFORMANCE would.
+     */
+    PROFILE_BIAS_PERFORMANCE    = 0x4,
+    /*
+     * Special low-power bias mode, implementation/device specific. May be
+     * implemented as an additional bias step, or geared towards a specific
+     * usage pattern such as video playback.
+     */
+    PROFILE_BIAS_POWER_2        = 0x5,
+    /*
+     * Special high-performance bias mode, implementation/device specific. May
+     * be implemented as an additional bias step, or geared toward a specific
+     * usage pattern such as gaming.
+     */
+    PROFILE_BIAS_PERFORMANCE_2  = 0x6
+
+} power_profile_t;
 
 __END_DECLS
 
