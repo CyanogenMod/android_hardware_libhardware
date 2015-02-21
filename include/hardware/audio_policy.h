@@ -328,10 +328,15 @@ struct audio_policy_service_ops {
                              float volume,
                              audio_io_handle_t output,
                              int delay_ms);
-
+#ifndef MR0_AUDIO_BLOB
     /* invalidate a stream type, causing a reroute to an unspecified new output */
     int (*invalidate_stream)(void *service,
                              audio_stream_type_t stream);
+#else
+    int (*set_stream_output)(void *service,
+                             audio_stream_type_t stream,
+                             audio_io_handle_t output);
+#endif
 
     /* function enabling to send proprietary informations directly from audio
      * policy manager to audio hardware interface. */
