@@ -34,6 +34,7 @@ typedef enum {
     BTSOCK_OPT_SET_MODEM_BITS = 2,
     BTSOCK_OPT_CLR_MODEM_BITS = 3,
     BTSOCK_OPT_SET_PUT_MTU    = 4,
+    BTSOCK_OPT_GET_CONG_STATUS = 5
 } btsock_option_type_t;
 
 /** Represents the standard BT SOCKET interface. */
