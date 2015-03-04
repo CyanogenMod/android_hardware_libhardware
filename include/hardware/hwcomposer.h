@@ -813,6 +813,10 @@ static inline int hwc_close_1(hwc_composer_device_1_t* device) {
 
 /*****************************************************************************/
 
+#ifdef TARGET_NEEDS_HWC_V0
+#include <hardware/hwcomposer_v0.h>
+#endif
+
 __END_DECLS
 
 #endif /* ANDROID_INCLUDE_HARDWARE_HWCOMPOSER_H */
