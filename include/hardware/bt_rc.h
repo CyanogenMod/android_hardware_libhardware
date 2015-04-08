@@ -424,12 +424,53 @@ typedef struct {
 
 typedef void (* btrc_passthrough_rsp_callback) (int id, int key_state);
 
+typedef void (* btrc_connection_state_callback) (bool state, bt_bdaddr_t *bd_addr);
+
+typedef void (* btrc_ctrl_getrcfeatures_callback) (bt_bdaddr_t *bd_addr, int features);
+
+typedef void (* btrc_ctrl_getcapability_rsp_callback) (bt_bdaddr_t *bd_addr, int cap_id,
+                                 uint32_t* supported_values, int num_supported, uint8_t rsp_type);
+
+typedef void (* btrc_ctrl_listplayerappsettingattrib_rsp_callback) (bt_bdaddr_t *bd_addr,
+                                     uint8_t* supported_attribs, int num_attrib, uint8_t rsp_type);
+
+typedef void (* btrc_ctrl_listplayerappsettingvalue_rsp_callback) (bt_bdaddr_t *bd_addr,
+                                        uint8_t* supported_val, uint8_t num_supported, uint8_t rsp_type);
+
+typedef void (* btrc_ctrl_currentplayerappsetting_rsp_callback) (bt_bdaddr_t *bd_addr,uint8_t* supported_ids,
+                                                 uint8_t* supported_val, uint8_t num_attrib, uint8_t rsp_type);
+
+typedef void (* btrc_ctrl_setplayerapplicationsetting_rsp_callback) (bt_bdaddr_t *bd_addr,uint8_t rsp_type);
+
+typedef void (* btrc_ctrl_notification_rsp_callback) (bt_bdaddr_t *bd_addr, uint8_t rsp_type,
+                                 int rsp_len, uint8_t* notification_rsp);
+
+typedef void (* btrc_ctrl_getelementattrib_rsp_callback) (bt_bdaddr_t *bd_addr, uint8_t num_attributes,
+                                                          int rsp_len, uint8_t* attrib_rsp, uint8_t rsp_type);
+
+typedef void (* btrc_ctrl_getplaystatus_rsp_callback) (bt_bdaddr_t *bd_addr, int param_len, uint8_t* play_status_rsp
+                                                                           ,uint8_t rsp_type);
+
+typedef void (* btrc_ctrl_setabsvol_cmd_callback) (bt_bdaddr_t *bd_addr, uint8_t abs_vol);
+
+typedef void (* btrc_ctrl_registernotification_abs_vol_callback) (bt_bdaddr_t *bd_addr);
 /** BT-RC Controller callback structure. */
 typedef struct {
     /** set to sizeof(BtRcCallbacks) */
     size_t      size;
-    btrc_passthrough_rsp_callback               passthrough_rsp_cb;
-    btrc_connection_state_callback              connection_state_cb;
+    btrc_passthrough_rsp_callback                              passthrough_rsp_cb;
+    btrc_connection_state_callback                             connection_state_cb;
+    btrc_ctrl_getrcfeatures_callback                           getrcfeatures_cb;
+    btrc_ctrl_getcapability_rsp_callback                       getcap_rsp_cb;
+    btrc_ctrl_listplayerappsettingattrib_rsp_callback          listplayerappsettingattrib_rsp_cb;
+    btrc_ctrl_listplayerappsettingvalue_rsp_callback           listplayerappsettingvalue_rsp_cb;
+    btrc_ctrl_currentplayerappsetting_rsp_callback             currentplayerappsetting_rsp_cb;
+    btrc_ctrl_setplayerapplicationsetting_rsp_callback         setplayerappsetting_rsp_cb;
+    btrc_ctrl_notification_rsp_callback                        notification_rsp_cb;
+    btrc_ctrl_getelementattrib_rsp_callback                    getelementattrib_rsp_cb;
+    btrc_ctrl_getplaystatus_rsp_callback                       getplaystatus_rsp_cb;
+    btrc_ctrl_setabsvol_cmd_callback                           setabsvol_cmd_cb;
+    btrc_ctrl_registernotification_abs_vol_callback            registernotification_absvol_cb;
 } btrc_ctrl_callbacks_t;
 
 /** Represents the standard BT-RC AVRCP Controller interface. */
@@ -445,6 +486,37 @@ typedef struct {
     /** send pass through command to target */
     bt_status_t (*send_pass_through_cmd) ( bt_bdaddr_t *bd_addr, uint8_t key_code,
             uint8_t key_state );
+
+    /** send get_cap command to target */
+    bt_status_t (*getcapabilities_cmd) (uint8_t cap_id);
+
+    /** send command to get supported player application settings to  target */
+    bt_status_t (*list_player_app_setting_attrib_cmd) (void);
+
+    /** send command to get supported  values of player application settings for a
+     * particular attribute to  target */
+    bt_status_t (*list_player_app_setting_value_cmd) (uint8_t attrib_id);
+
+    /** send command to get current player attributes to target */
+    bt_status_t (*get_player_app_setting_cmd) (uint8_t num_attrib, uint8_t* attrib_ids);
+
+    /** send command to set player applicaiton setting attributes to target */
+    bt_status_t (*set_player_app_setting_cmd) (uint8_t num_attrib, uint8_t* attrib_ids, uint8_t* attrib_vals);
+
+    /** send command to register for supported notificaiton events to target */
+    bt_status_t (*register_notification_cmd) (uint8_t event_id, uint32_t event_value);
+
+    /** send command to get element attribute  to target */
+    bt_status_t (*get_element_attribute_cmd) (uint8_t num_attribute, uint32_t attribute_id);
+
+    /** send command to get play status to target */
+    bt_status_t (*get_play_status_cmd) (void);
+
+    /** send rsp to set_abs_vol received from target */
+    bt_status_t (*send_abs_vol_rsp) (uint8_t abs_vol);
+
+    /** send notificaiton rsp for abs vol to target */
+    bt_status_t (*send_register_abs_vol_rsp) (uint8_t rsp_type, uint8_t abs_vol);
 
     /** Closes the interface. */
     void  (*cleanup)( void );
