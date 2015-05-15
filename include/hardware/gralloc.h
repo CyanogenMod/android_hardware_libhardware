@@ -150,6 +150,14 @@ enum {
 
 /*****************************************************************************/
 
+#ifdef QCOM_BSP
+enum {
+    /* Gralloc perform enums */
+       GRALLOC_MODULE_PERFORM_UPDATE_BUFFER_GEOMETRY = 0,
+       GRALLOC_MODULE_PERFORM_PRIVATE_START
+};
+#endif
+
 /**
  * Every hardware module must have a data structure named HAL_MODULE_INFO_SYM
  * and the fields of this data structure must begin with hw_module_t
