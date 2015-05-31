@@ -107,7 +107,7 @@ typedef struct fingerprint_device {
     /*
      * Fingerprint enroll request:
      * Switches the HAL state machine to collect and store a new fingerprint
-     * template. Switches back as soon as enroll is complete
+     * template. Switches back to idle as soon as enroll is complete
      * (fingerprint_msg.type == FINGERPRINT_TEMPLATE_ENROLLING &&
      *  fingerprint_msg.data.enroll.samples_remaining == 0)
      * or after timeout_sec seconds.
@@ -120,15 +120,36 @@ typedef struct fingerprint_device {
 
     /*
      * Cancel fingerprint enroll request:
-     * Switches the HAL state machine back to accept a fingerprint scan mode.
+     * Switches the HAL state machine back to idle.
      * (fingerprint_msg.type == FINGERPRINT_TEMPLATE_ENROLLING &&
      *  fingerprint_msg.data.enroll.samples_remaining == 0)
-     * will indicate switch back to the scan mode.
+     * will indicate switch back to idle.
      *
      * Function return: 0 if cancel request is accepted
      *                 -1 otherwise.
      */
     int (*enroll_cancel)(struct fingerprint_device *dev);
+
+    /*
+     * Fingerprint scan request:
+     * Switches the HAL state machine to scan for an enrolled fingerprint
+     * template. Switches back to idle as soon as processing is complete
+     * (fingerprint_msg.type == FINGERPRINT_PROCESSED).
+     *
+     * Function return: 0 if scan process can be successfully started
+     *                 -1 otherwise. A notify() function may be called
+     *                    indicating the error condition.
+     */
+    int (*scan)(struct fingerprint_device *dev);
+
+    /*
+     * Cancel fingerprint scan request:
+     * Switches the HAL state machine back to idle.
+     *
+     * Function return: 0 if cancel request is accepted
+     *                 -1 otherwise.
+     */
+    int (*scan_cancel)(struct fingerprint_device *dev);
 
     /*
      * Fingerprint remove request:
