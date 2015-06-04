@@ -18,6 +18,7 @@
 #define ANDROID_INCLUDE_HARDWARE_FINGERPRINT_H
 
 #define FINGERPRINT_MODULE_API_VERSION_1_0 HARDWARE_MODULE_API_VERSION(1, 0)
+#define FINGERPRINT_MODULE_API_VERSION_1_1 HARDWARE_MODULE_API_VERSION(1, 1)
 #define FINGERPRINT_HARDWARE_MODULE_ID "fingerprint"
 
 typedef enum fingerprint_msg_type {
@@ -32,7 +33,9 @@ typedef enum fingerprint_error {
     FINGERPRINT_ERROR_HW_UNAVAILABLE = 1,
     FINGERPRINT_ERROR_UNABLE_TO_PROCESS = 2,
     FINGERPRINT_ERROR_TIMEOUT = 3,
-    FINGERPRINT_ERROR_NO_SPACE = 4  /* No space available to store a template */
+    FINGERPRINT_ERROR_NO_SPACE = 4,  /* No space available to store a template */
+    FINGERPRINT_ERROR_CANCELED = 5,
+    FINGERPRINT_ERROR_UNABLE_TO_REMOVE = 6
 } fingerprint_error_t;
 
 typedef enum fingerprint_acquired_info {
@@ -105,6 +108,20 @@ typedef struct fingerprint_device {
     struct hw_device_t common;
 
     /*
+     * Fingerprint authenticate request:
+     * Switches the HAL state machine scan and authenticate against an enrolled
+     * fingerprint. Switches back as soon as enroll is complete
+     * (fingerprint_msg.type == FINGERPRINT_TEMPLATE_ENROLLING &&
+     *  fingerprint_msg.data.enroll.samples_remaining == 0)
+     * or after timeout_sec seconds.
+     *
+     * Function return: 0 if enrollment process can be successfully started
+     *                 -1 otherwise. A notify() function may be called
+     *                    indicating the error condition.
+     */
+    int (*authenticate)(struct fingerprint_device *dev);
+
+    /*
      * Fingerprint enroll request:
      * Switches the HAL state machine to collect and store a new fingerprint
      * template. Switches back as soon as enroll is complete
@@ -119,16 +136,13 @@ typedef struct fingerprint_device {
     int (*enroll)(struct fingerprint_device *dev, uint32_t timeout_sec);
 
     /*
-     * Cancel fingerprint enroll request:
-     * Switches the HAL state machine back to accept a fingerprint scan mode.
-     * (fingerprint_msg.type == FINGERPRINT_TEMPLATE_ENROLLING &&
-     *  fingerprint_msg.data.enroll.samples_remaining == 0)
-     * will indicate switch back to the scan mode.
+     * Cancel fingerprint request:
+     * Switches the HAL state machine back to idle.
      *
      * Function return: 0 if cancel request is accepted
      *                 -1 otherwise.
      */
-    int (*enroll_cancel)(struct fingerprint_device *dev);
+    int (*cancel)(struct fingerprint_device *dev);
 
     /*
      * Fingerprint remove request:
