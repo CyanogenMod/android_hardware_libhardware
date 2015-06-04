@@ -31,6 +31,11 @@ static int fingerprint_close(hw_device_t *dev)
     }
 }
 
+static int fingerprint_authenticate(struct fingerprint_device __unused *dev,
+                                uint32_t __unused timeout_sec) {
+    return FINGERPRINT_ERROR;
+}
+
 static int fingerprint_enroll(struct fingerprint_device __unused *dev,
                                 uint32_t __unused timeout_sec) {
     return FINGERPRINT_ERROR;
