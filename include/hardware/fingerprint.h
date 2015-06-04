@@ -18,6 +18,7 @@
 #define ANDROID_INCLUDE_HARDWARE_FINGERPRINT_H
 
 #define FINGERPRINT_MODULE_API_VERSION_1_0 HARDWARE_MODULE_API_VERSION(1, 0)
+#define FINGERPRINT_MODULE_API_VERSION_1_1 HARDWARE_MODULE_API_VERSION(1, 1)
 #define FINGERPRINT_HARDWARE_MODULE_ID "fingerprint"
 
 typedef enum fingerprint_msg_type {
@@ -32,7 +33,9 @@ typedef enum fingerprint_error {
     FINGERPRINT_ERROR_HW_UNAVAILABLE = 1,
     FINGERPRINT_ERROR_UNABLE_TO_PROCESS = 2,
     FINGERPRINT_ERROR_TIMEOUT = 3,
-    FINGERPRINT_ERROR_NO_SPACE = 4  /* No space available to store a template */
+    FINGERPRINT_ERROR_NO_SPACE = 4,  /* No space available to store a template */
+    FINGERPRINT_ERROR_CANCELED = 5,
+    FINGERPRINT_ERROR_UNABLE_TO_REMOVE = 6
 } fingerprint_error_t;
 
 typedef enum fingerprint_acquired_info {
@@ -91,6 +94,18 @@ typedef struct fingerprint_msg {
     } data;
 } fingerprint_msg_t;
 
+/**
+  Enrollment Info
+**/
+typedef struct {
+        int index;
+} fingerprint_t;
+
+typedef struct {
+        int num_fingers;
+        fingerprint_t *fpinfo;
+} enrollment_info_t;
+
 /* Callback function type */
 typedef void (*fingerprint_notify_t)(fingerprint_msg_t msg);
 
@@ -103,6 +118,20 @@ typedef struct fingerprint_device {
      * the hw_device_t references a fingerprint_device.
      */
     struct hw_device_t common;
+
+    /*
+     * Fingerprint authenticate request:
+     * Switches the HAL state machine scan and authenticate against an enrolled
+     * fingerprint. Switches back as soon as enroll is complete
+     * (fingerprint_msg.type == FINGERPRINT_TEMPLATE_ENROLLING &&
+     *  fingerprint_msg.data.enroll.samples_remaining == 0)
+     * or after timeout_sec seconds.
+     *
+     * Function return: 0 if enrollment process can be successfully started
+     *                 -1 otherwise. A notify() function may be called
+     *                    indicating the error condition.
+     */
+    int (*authenticate)(struct fingerprint_device *dev);
 
     /*
      * Fingerprint enroll request:
@@ -119,16 +148,13 @@ typedef struct fingerprint_device {
     int (*enroll)(struct fingerprint_device *dev, uint32_t timeout_sec);
 
     /*
-     * Cancel fingerprint enroll request:
-     * Switches the HAL state machine back to accept a fingerprint scan mode.
-     * (fingerprint_msg.type == FINGERPRINT_TEMPLATE_ENROLLING &&
-     *  fingerprint_msg.data.enroll.samples_remaining == 0)
-     * will indicate switch back to the scan mode.
+     * Cancel fingerprint request:
+     * Switches the HAL state machine back to idle.
      *
      * Function return: 0 if cancel request is accepted
      *                 -1 otherwise.
      */
-    int (*enroll_cancel)(struct fingerprint_device *dev);
+    int (*cancel)(struct fingerprint_device *dev);
 
     /*
      * Fingerprint remove request:
@@ -154,6 +180,30 @@ typedef struct fingerprint_device {
      */
     int (*set_notify)(struct fingerprint_device *dev,
                         fingerprint_notify_t notify);
+
+    /*
+     * Get all enrolled fingerprints.
+     *
+     * Function return: 0 on success.
+     *                 -1 otherwise.
+     */
+    int (*get_enrollment_info)(struct fingerprint_device *dev, enrollment_info_t** enrollmentInfo);
+
+    /*
+     * Releases resources acquired in get_enrollment_info
+     *
+     * Function return: 0 on success.
+     *                 -1 otherwise.
+     */
+    int (*release_enrollment_info)(struct fingerprint_device *dev, enrollment_info_t *enrollmentInfo);
+
+    /*
+     * Get number of enrollment steps.
+     *
+     * Function return: positive non-zero integer, if determinate num steps is defined
+                        -1 otherwise (the num steps is unknown/dynamic)
+     */
+    int (*get_num_enrollment_steps)(struct fingerprint_device *dev);
 
     /*
      * Client provided callback function to receive notifications.
