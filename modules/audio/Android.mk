@@ -43,3 +43,16 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_CFLAGS := -Wno-unused-parameter
 
 include $(BUILD_SHARED_LIBRARY)
+
+# The stub audio amplifier HAL module that can be used as a skeleton for
+# new implementations.
+include $(CLEAR_VARS)
+
+LOCAL_MODULE := audio_amplifier.default
+LOCAL_MODULE_RELATIVE_PATH := hw
+LOCAL_SRC_FILES := audio_amplifier.c
+LOCAL_SHARED_LIBRARIES := liblog libcutils
+LOCAL_MODULE_TAGS := optional
+LOCAL_CFLAGS := -Wno-unused-parameter
+
+include $(BUILD_SHARED_LIBRARY)
