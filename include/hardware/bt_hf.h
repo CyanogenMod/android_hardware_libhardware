@@ -244,6 +244,17 @@ typedef enum {
     BTHF_CALL_ADDRTYPE_UNKNOWN = 0x81,
     BTHF_CALL_ADDRTYPE_INTERNATIONAL = 0x91
 } bthf_call_addrtype_t;
+
+typedef enum {
+    BTHF_VOIP_CALL_NETWORK_TYPE_MOBILE = 0,
+    BTHF_VOIP_CALL_NETWORK_TYPE_WIFI
+} bthf_voip_call_network_type_t;
+
+typedef enum {
+    BTHF_VOIP_STATE_STOPPED = 0,
+    BTHF_VOIP_STATE_STARTED
+} bthf_voip_state_t;
+
 /** Represents the standard BT-HF interface. */
 typedef struct {
 
@@ -326,6 +337,10 @@ typedef struct {
 
     /** Response for BIND TEST command */
     bt_status_t (*bind_string_response) (const char* result, bt_bdaddr_t *bd_addr);
+
+    /** Sends connectivity network type used by Voip currently to stack */
+    bt_status_t (*voip_network_type_wifi) (bthf_voip_state_t is_voip_started,
+                                           bthf_voip_call_network_type_t is_network_wifi);
 } bthf_interface_t;
 
 __END_DECLS
