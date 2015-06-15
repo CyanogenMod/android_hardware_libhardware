@@ -53,6 +53,10 @@ static int set_notify_callback(struct fingerprint_device *dev,
     return FINGERPRINT_ERROR;
 }
 
+static int fingerprint_get_enrollment_info(struct fingerprint_device *dev, enrollment_info_t* enrollmentInfo) {
+  return FINGERPRINT_ERROR;
+}
+
 static int fingerprint_open(const hw_module_t* module, const char __unused *id,
                             hw_device_t** device)
 {
@@ -73,6 +77,7 @@ static int fingerprint_open(const hw_module_t* module, const char __unused *id,
     dev->remove = fingerprint_remove;
     dev->set_notify = set_notify_callback;
     dev->notify = NULL;
+    dev->get_enrollment_info = fingerprint_get_enrollment_info;
 
     *device = (hw_device_t*) dev;
     return 0;
