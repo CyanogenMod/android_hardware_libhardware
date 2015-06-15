@@ -21,6 +21,11 @@
 #define FINGERPRINT_MODULE_API_VERSION_1_1 HARDWARE_MODULE_API_VERSION(1, 1)
 #define FINGERPRINT_HARDWARE_MODULE_ID "fingerprint"
 
+// Enrollment Constants
+#define MAX_FINGERS                     5
+#define FINGER_NAME_LEN                 32
+#define FINGER_USERDATA_LEN             256
+
 typedef enum fingerprint_msg_type {
     FINGERPRINT_ERROR = -1,
     FINGERPRINT_ACQUIRED = 1,
@@ -93,6 +98,19 @@ typedef struct fingerprint_msg {
         fingerprint_processed_t processed;
     } data;
 } fingerprint_msg_t;
+
+/**
+  Enrollment Info
+**/
+typedef struct {
+        int index;
+        char name[FINGER_NAME_LEN+1];
+} fingerprint_t;
+
+typedef struct {
+        int total;
+        fingerprint_t fpinfo[MAX_FINGERS];
+} enrollment_info_t;
 
 /* Callback function type */
 typedef void (*fingerprint_notify_t)(fingerprint_msg_t msg);
@@ -168,6 +186,8 @@ typedef struct fingerprint_device {
      */
     int (*set_notify)(struct fingerprint_device *dev,
                         fingerprint_notify_t notify);
+
+    int (*get_enrollment_info)(struct fingerprint_device *dev, enrollment_info_t* enrollmentInfo);
 
     /*
      * Client provided callback function to receive notifications.
