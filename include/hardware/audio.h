@@ -196,7 +196,7 @@ __BEGIN_DECLS
 
 #ifdef QCOM_DIRECTTRACK
 /** Structure to save buffer information for applying effects for
-+ *  LPA buffers */
+ *  LPA buffers */
 struct buf_info {
     int bufsize;
     int nBufs;
