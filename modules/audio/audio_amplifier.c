@@ -35,6 +35,18 @@ static int amp_set_output_devices(amplifier_device_t *device, uint32_t devices)
     return 0;
 }
 
+static int amp_enable_output_devices(amplifier_device_t *device,
+        uint32_t devices, bool enable)
+{
+    return 0;
+}
+
+static int amp_enable_input_devices(amplifier_device_t *device,
+        uint32_t devices, bool enable)
+{
+    return 0;
+}
+
 static int amp_set_mode(amplifier_device_t *device, audio_mode_t mode)
 {
     return 0;
@@ -95,6 +107,8 @@ static int amp_module_open(const hw_module_t *module, const char *name,
 
     amp_dev->set_input_devices = amp_set_input_devices;
     amp_dev->set_output_devices = amp_set_output_devices;
+    amp_dev->enable_output_devices = amp_enable_output_devices;
+    amp_dev->enable_input_devices = amp_enable_input_devices;
     amp_dev->set_mode = amp_set_mode;
     amp_dev->output_stream_start = amp_output_stream_start;
     amp_dev->input_stream_start = amp_input_stream_start;
