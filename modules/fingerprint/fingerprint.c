@@ -63,6 +63,10 @@ static int fingerprint_release_enrollment_info(struct fingerprint_device __unuse
   return FINGERPRINT_ERROR;
 }
 
+static int fingerprint_get_num_enrollment_steps(struct fingerprint_device __unused *dev) {
+  return FINGERPRINT_ERROR;
+}
+
 static int fingerprint_open(const hw_module_t* module, const char __unused *id,
                             hw_device_t** device)
 {
@@ -85,6 +89,7 @@ static int fingerprint_open(const hw_module_t* module, const char __unused *id,
     dev->notify = NULL;
     dev->get_enrollment_info = fingerprint_get_enrollment_info;
     dev->release_enrollment_info = fingerprint_release_enrollment_info;
+    dev->get_num_enrollment_steps = fingerprint_get_num_enrollment_steps;
 
     *device = (hw_device_t*) dev;
     return 0;

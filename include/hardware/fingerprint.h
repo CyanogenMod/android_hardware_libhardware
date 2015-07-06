@@ -198,6 +198,14 @@ typedef struct fingerprint_device {
     int (*release_enrollment_info)(struct fingerprint_device *dev, enrollment_info_t *enrollmentInfo);
 
     /*
+     * Get number of enrollment steps.
+     *
+     * Function return: positive non-zero integer, if determinate num steps is defined
+                        -1 otherwise (the num steps is unknown/dynamic)
+     */
+    int (*get_num_enrollment_steps)(struct fingerprint_device *dev);
+
+    /*
      * Client provided callback function to receive notifications.
      * Do not set by hand, use the function above instead.
      */
