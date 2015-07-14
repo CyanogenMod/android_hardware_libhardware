@@ -143,6 +143,11 @@ __BEGIN_DECLS
 #define BRIGHTNESS_MODE_LOW_PERSISTENCE 2
 
 /**
+ * Light mode allows multiple LEDs
+ */
+#define LIGHT_MODE_MULTIPLE_LEDS    0x01
+
+/**
  * The parameters that can be set for a given light.
  *
  * Not all lights must support all parameters.  If you
@@ -177,6 +182,12 @@ struct light_state_t {
      * Currently the values are BRIGHTNESS_MODE_USER and BRIGHTNESS_MODE_SENSOR.
      */
     int brightnessMode;
+
+    /**
+     * Define the LEDs modes (multiple, ...).
+     * See the LIGHTS_MODE_* mask constants.
+     */
+    unsigned int ledsModes;
 };
 
 struct light_device_t {
