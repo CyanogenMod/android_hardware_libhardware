@@ -88,6 +88,11 @@ __BEGIN_DECLS
 #define BRIGHTNESS_MODE_SENSOR      1
 
 /**
+ * Light brightness maximum value to use.
+ */
+#define LIGHT_BRIGHTNESS_MAXIMUM    255
+
+/**
  * The parameters that can be set for a given light.
  *
  * Not all lights must support all parameters.  If you
@@ -122,6 +127,18 @@ struct light_state_t {
      * Currently the values are BRIGHTNESS_MODE_USER and BRIGHTNESS_MODE_SENSOR.
      */
     int brightnessMode;
+
+    /**
+     * Defines the maximum brightness to use.
+     * From 0 to BRIGHTNESS_MAX_VALUE.
+     */
+    unsigned int brightnessLevel;
+
+    /**
+     * Define the multiple LEDs mode.
+     * Deactivated by 0, activated otherwise.
+     */
+    unsigned int multipleLeds;
 };
 
 struct light_device_t {
