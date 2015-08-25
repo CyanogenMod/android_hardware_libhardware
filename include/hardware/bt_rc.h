@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013-2014, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2013-2015, The Linux Foundation. All rights reserved.
  * Not a Contribution.
  *
  * Copyright (C) 2012 The Android Open Source Project
@@ -28,8 +28,14 @@ __BEGIN_DECLS
 #define BTRC_MAX_APP_SETTINGS       8
 #define BTRC_MAX_FOLDER_DEPTH       4
 #define BTRC_MAX_APP_ATTR_SIZE      16
-#define BTRC_MAX_ELEM_ATTR_SIZE     7
+#define BTRC_MAX_ELEM_ATTR_SIZE     8
 #define BTRC_CHARSET_UTF8           0x006A
+#define BTRC_BROWSE_PDU_HEADER      3
+#define BTRC_AVCTP_HEADER           3
+#define BTRC_BROWSE_PKT_3TO7OCT_LEN 5
+#define BTRC_FOLDER_ITEM_HEADER     14
+#define BTRC_ITEM_ATTRIBUTE_HEADER  8
+#define BTRC_ITEM_TYPE_N_LEN_OCT    3
 
 typedef uint8_t btrc_uid_t[BTRC_UID_SIZE];
 
@@ -91,6 +97,7 @@ typedef enum {
     BTRC_MEDIA_ATTR_NUM_TRACKS = 0x05,
     BTRC_MEDIA_ATTR_GENRE = 0x06,
     BTRC_MEDIA_ATTR_PLAYING_TIME = 0x07,
+    BTRC_MEDIA_ATTR_COVER_ART = 0x08,
 } btrc_media_attr_t;
 
 typedef enum {
@@ -324,9 +331,11 @@ typedef void (* btrc_change_path_callback) (uint8_t direction, uint64_t uid, bt_
 typedef void (* btrc_play_item_callback) (uint8_t scope, uint64_t uid, bt_bdaddr_t *bd_addr);
 
 typedef void (* btrc_get_item_attr_callback) (uint8_t scope, uint64_t uid,
-                  uint8_t num_attr, btrc_media_attr_t *p_attrs, bt_bdaddr_t *bd_addr);
+        uint8_t num_attr, btrc_media_attr_t *p_attrs, uint32_t size, bt_bdaddr_t *bd_addr);
 
 typedef void (* btrc_connection_state_callback) (bool state, bt_bdaddr_t *bd_addr);
+
+typedef void (* btrc_get_total_item_callback) (uint8_t scope, bt_bdaddr_t *bd_addr);
 
 typedef struct {
     /** set to sizeof(BtRcCallbacks) */
@@ -350,6 +359,7 @@ typedef struct {
     btrc_play_item_callback                     play_item_cb;
     btrc_get_item_attr_callback                 get_item_attr_cb;
     btrc_connection_state_callback              connection_state_cb;
+    btrc_get_total_item_callback                get_tot_item_cb;
 } btrc_callbacks_t;
 
 /** Represents the standard BT-RC AVRCP Target interface. */
@@ -438,6 +448,8 @@ typedef struct {
     bt_status_t (*get_item_attr_rsp)( uint8_t num_attr, btrc_element_attr_val_t *p_attrs,
             bt_bdaddr_t *bd_addr);
     bt_status_t (*is_device_active_in_handoff) (bt_bdaddr_t *bd_addr);
+    bt_status_t (*get_total_items_rsp) (uint8_t status_code, uint32_t item_count,
+            uint16_t uid_counter, bt_bdaddr_t *bd_addr);
 
     /** Closes the interface. */
     void  (*cleanup)( void );
