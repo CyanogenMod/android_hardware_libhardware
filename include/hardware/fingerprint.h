@@ -21,6 +21,11 @@
 #define FINGERPRINT_MODULE_API_VERSION_1_1 HARDWARE_MODULE_API_VERSION(1, 1)
 #define FINGERPRINT_HARDWARE_MODULE_ID "fingerprint"
 
+#define FINGERPRINT_PARAMETER_WAKEUP "wakeup"
+#define FINGERPRINT_PARAMETER_DISPLAY "display"
+
+#include <cutils/str_parms.h>
+
 typedef enum fingerprint_msg_type {
     FINGERPRINT_ERROR = -1,
     FINGERPRINT_ACQUIRED = 1,
@@ -204,6 +209,14 @@ typedef struct fingerprint_device {
                         -1 otherwise (the num steps is unknown/dynamic)
      */
     int (*get_num_enrollment_steps)(struct fingerprint_device *dev);
+
+    /*
+     * Set generic parameters in the fingerprint hal
+     *
+     * Function return: 0 on success.
+     *                 -1 otherwise.
+     */
+    int (*set_parameters)(struct fingerprint_device *dev, const char *kvpairs);
 
     /*
      * Client provided callback function to receive notifications.
