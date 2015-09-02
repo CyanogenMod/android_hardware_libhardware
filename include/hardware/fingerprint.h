@@ -19,7 +19,10 @@
 
 #define FINGERPRINT_MODULE_API_VERSION_1_0 HARDWARE_MODULE_API_VERSION(1, 0)
 #define FINGERPRINT_MODULE_API_VERSION_1_1 HARDWARE_MODULE_API_VERSION(1, 1)
+#define FINGERPRINT_MODULE_API_VERSION_1_2 HARDWARE_MODULE_API_VERSION(1, 2)
 #define FINGERPRINT_HARDWARE_MODULE_ID "fingerprint"
+
+#define FINGERPRINT_PARAMETER_WAKEUP "wakeup"
 
 typedef enum fingerprint_msg_type {
     FINGERPRINT_ERROR = -1,
@@ -211,8 +214,18 @@ typedef struct fingerprint_device {
      */
     fingerprint_notify_t notify;
 
+    /*
+     * Set generic parameters in the fingerprint hal
+     *
+     * Only available in FINGERPRINT_MODULE_API_VERSION_1_2 & can be NULL.
+     *
+     * Function return: 0 on success.
+     *                 -1 otherwise.
+     */
+    int (*set_parameters)(struct fingerprint_device *dev, const char *kvpairs);
+
     /* Reserved for future use. Must be NULL. */
-    void* reserved[8 - 4];
+    void* reserved[8 -4];
 } fingerprint_device_t;
 
 typedef struct fingerprint_module {
