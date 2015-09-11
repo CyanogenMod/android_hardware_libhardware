@@ -105,6 +105,12 @@ typedef struct amplifier_device {
      */
     int (*input_stream_standby)(struct amplifier_device *device,
             struct audio_stream_in *stream);
+
+    /**
+     * set/get output audio device parameters.
+     */
+    int (*set_parameters)(struct amplifier_device *device,
+        struct str_parms *parms);
 } amplifier_device_t;
 
 typedef struct amplifier_module {
