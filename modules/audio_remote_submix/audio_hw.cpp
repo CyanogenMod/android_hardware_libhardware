@@ -158,11 +158,9 @@ typedef struct route_config {
     // destroyed if both and input and output streams are destroyed.
     struct submix_stream_out *output;
     struct submix_stream_in *input;
-#if ENABLE_RESAMPLING
     // Buffer used as temporary storage for resampled data prior to returning data to the output
     // stream.
     int16_t resampler_buffer[DEFAULT_PIPE_SIZE_IN_FRAMES];
-#endif // ENABLE_RESAMPLING
 } route_config_t;
 
 struct submix_audio_device {
@@ -472,10 +470,8 @@ static void submix_audio_device_release_pipe_l(struct submix_audio_device * cons
         rsxadev->routes[route_idx].rsxSource = 0;
     }
     memset(rsxadev->routes[route_idx].address, 0, AUDIO_DEVICE_MAX_ADDRESS_LEN);
-#ifdef ENABLE_RESAMPLING
     memset(rsxadev->routes[route_idx].resampler_buffer, 0,
             sizeof(int16_t) * DEFAULT_PIPE_SIZE_IN_FRAMES);
-#endif
 }
 
 // Remove references to the specified input and output streams.  When the device no longer
@@ -1112,8 +1108,8 @@ static ssize_t in_read(struct audio_stream_in *stream, void* buffer,
         while ((remaining_frames > 0) && (attempts < MAX_READ_ATTEMPTS)) {
             ssize_t frames_read = -1977;
             size_t read_frames = remaining_frames;
+            char* saved_buff = NULL;
 #if ENABLE_RESAMPLING
-            char* const saved_buff = buff;
             if (resampler_ratio != 1.0f) {
                 // Calculate the number of frames from the pipe that need to be read to generate
                 // the data for the input stream read.
@@ -1121,6 +1117,7 @@ static ssize_t in_read(struct audio_stream_in *stream, void* buffer,
                     (float)read_frames * (float)resampler_ratio);
                 read_frames = min(frames_required_for_resampler, resampler_buffer_size_frames);
                 // Read into the resampler buffer.
+                saved_buff = buff;
                 buff = (char*)rsxadev->routes[in->route_handle].resampler_buffer;
             }
 #endif // ENABLE_RESAMPLING
@@ -1129,6 +1126,9 @@ static ssize_t in_read(struct audio_stream_in *stream, void* buffer,
                 // Need to read half the requested frames since the converted output
                 // data will take twice the space (mono->stereo).
                 read_frames /= 2;
+            } else if (output_channels == 2 && input_channels == 1 && saved_buff == NULL) {
+                saved_buff = buff;
+                buff = (char*)rsxadev->routes[in->route_handle].resampler_buffer;
             }
 #endif // ENABLE_CHANNEL_CONVERSION
 
@@ -1185,8 +1185,15 @@ static ssize_t in_read(struct audio_stream_in *stream, void* buffer,
                 SUBMIX_ALOGV("in_read(): resampler produced %zd frames", input_stream_frame);
                 frames_read = input_stream_frame;
                 buff = saved_buff;
+                saved_buff = NULL;
             }
 #endif // ENABLE_RESAMPLING
+
+            if (saved_buff) {
+                memcpy(saved_buff, buff, frames_read * frame_size);
+                buff = saved_buff;
+                saved_buff = NULL;
+            }
 
             if (frames_read > 0) {
 #if LOG_STREAMS_TO_FILES
