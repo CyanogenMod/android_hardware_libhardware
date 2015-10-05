@@ -159,11 +159,11 @@ typedef struct route_config {
     // destroyed if both and input and output streams are destroyed.
     struct submix_stream_out *output;
     struct submix_stream_in *input;
-#if ENABLE_RESAMPLING
-    // Buffer used as temporary storage for resampled data prior to returning data to the output
+#if (ENABLE_RESAMPLING || ENABLE_CHANNEL_CONVERSION)
+    // Buffer used as temporary storage for audio data prior to returning data to the output
     // stream.
-    int16_t resampler_buffer[DEFAULT_PIPE_SIZE_IN_FRAMES];
-#endif // ENABLE_RESAMPLING
+    int16_t processor_buffer[DEFAULT_PIPE_SIZE_IN_FRAMES];
+#endif
 } route_config_t;
 
 struct submix_audio_device {
@@ -473,8 +473,8 @@ static void submix_audio_device_release_pipe_l(struct submix_audio_device * cons
         rsxadev->routes[route_idx].rsxSource = 0;
     }
     memset(rsxadev->routes[route_idx].address, 0, AUDIO_DEVICE_MAX_ADDRESS_LEN);
-#ifdef ENABLE_RESAMPLING
-    memset(rsxadev->routes[route_idx].resampler_buffer, 0,
+#if (ENABLE_RESAMPLING || ENABLE_CHANNEL_CONVERSION)
+    memset(rsxadev->routes[route_idx].processor_buffer, 0,
             sizeof(int16_t) * DEFAULT_PIPE_SIZE_IN_FRAMES);
 #endif
 }
@@ -1133,13 +1133,14 @@ static ssize_t in_read(struct audio_stream_in *stream, void* buffer,
         }
 #endif // ENABLE_CHANNEL_CONVERSION
 
+#if (ENABLE_RESAMPLING || ENABLE_CHANNEL_CONVERSION)
+        const size_t processor_buffer_size_frames =
+                sizeof(rsxadev->routes[in->route_handle].processor_buffer) / frame_size;
+#endif
 #if ENABLE_RESAMPLING
         const uint32_t input_sample_rate = in_get_sample_rate(&stream->common);
         const uint32_t output_sample_rate =
                 rsxadev->routes[in->route_handle].config.output_sample_rate;
-        const size_t resampler_buffer_size_frames =
-            sizeof(rsxadev->routes[in->route_handle].resampler_buffer) /
-                sizeof(rsxadev->routes[in->route_handle].resampler_buffer[0]);
         float resampler_ratio = 1.0f;
         // Determine whether resampling is required.
         if (input_sample_rate != output_sample_rate) {
@@ -1156,16 +1157,18 @@ static ssize_t in_read(struct audio_stream_in *stream, void* buffer,
         while ((remaining_frames > 0) && (attempts < MAX_READ_ATTEMPTS)) {
             ssize_t frames_read = -1977;
             size_t read_frames = remaining_frames;
-#if ENABLE_RESAMPLING
+#if (ENABLE_RESAMPLING || ENABLE_CHANNEL_CONVERSION)
             char* const saved_buff = buff;
+#endif
+#if ENABLE_RESAMPLING
             if (resampler_ratio != 1.0f) {
                 // Calculate the number of frames from the pipe that need to be read to generate
                 // the data for the input stream read.
                 const size_t frames_required_for_resampler = (size_t)(
                     (float)read_frames * (float)resampler_ratio);
-                read_frames = min(frames_required_for_resampler, resampler_buffer_size_frames);
+                read_frames = min(frames_required_for_resampler, processor_buffer_size_frames);
                 // Read into the resampler buffer.
-                buff = (char*)rsxadev->routes[in->route_handle].resampler_buffer;
+                buff = (char*)rsxadev->routes[in->route_handle].processor_buffer;
             }
 #endif // ENABLE_RESAMPLING
 #if ENABLE_CHANNEL_CONVERSION
@@ -1173,6 +1176,13 @@ static ssize_t in_read(struct audio_stream_in *stream, void* buffer,
                 // Need to read half the requested frames since the converted output
                 // data will take twice the space (mono->stereo).
                 read_frames /= 2;
+            } else if (output_channels == 2 && input_channels == 1) {
+                // If the resampler is active, we already swapped for the processor_buffer
+                if (resampler_ratio == 1.0f) {
+                    buff = (char*)rsxadev->routes[in->route_handle].processor_buffer;
+                }
+
+                read_frames = min(read_frames, processor_buffer_size_frames/2);
             }
 #endif // ENABLE_CHANNEL_CONVERSION
 
@@ -1191,11 +1201,17 @@ static ssize_t in_read(struct audio_stream_in *stream, void* buffer,
                 if (output_channels == 2 && input_channels == 1) {
                     // Offset into the output stream data in samples.
                     ssize_t output_stream_offset = 0;
+                    // If resampler is active, continue writing to the temporary buffer
+                    int16_t *mixed_buffer =
+                        (resampler_ratio == 1.0f) ? (int16_t*)saved_buff : (int16_t*)buff;
                     for (ssize_t input_stream_frame = 0; input_stream_frame < frames_read;
                          input_stream_frame++, output_stream_offset += 2) {
                         // Average the content from both channels.
-                        data[input_stream_frame] = ((int32_t)data[output_stream_offset] +
-                                                    (int32_t)data[output_stream_offset + 1]) / 2;
+                        mixed_buffer[input_stream_frame] = ((int32_t)data[output_stream_offset] +
+                                                            (int32_t)data[output_stream_offset + 1]) / 2;
+                    }
+                    if (resampler_ratio == 1.0f) {
+                        buff = saved_buff;
                     }
                 } else if (output_channels == 1 && input_channels == 2) {
                     // Offset into the input stream data in samples.
@@ -1219,13 +1235,20 @@ static ssize_t in_read(struct audio_stream_in *stream, void* buffer,
                 // sampled at a different rate this will result in very nasty aliasing.
                 const float output_stream_frames = (float)frames_read;
                 size_t input_stream_frame = 0;
+                size_t input_buf_offset = 0, output_buf_offset = 0;
                 for (float output_stream_frame = 0.0f;
                      output_stream_frame < output_stream_frames &&
                      input_stream_frame < remaining_frames;
                      output_stream_frame += resampler_ratio, input_stream_frame++) {
-                    resampled_buffer[input_stream_frame] = data[(size_t)output_stream_frame];
+                    input_buf_offset = input_stream_frame * input_channels;
+                    output_buf_offset = (size_t)output_stream_frame * input_channels;
+                    resampled_buffer[input_buf_offset] = data[output_buf_offset];
+                    if (input_channels == 2) {
+                        // copy second channel in the frame
+                        resampled_buffer[input_buf_offset + 1] = data[output_buf_offset + 1];
+                    }
                 }
-                ALOG_ASSERT(input_stream_frame <= (ssize_t)resampler_buffer_size_frames);
+                ALOG_ASSERT(input_stream_frame <= (ssize_t)processor_buffer_size_frames);
                 SUBMIX_ALOGV("in_read(): resampler produced %zd frames", input_stream_frame);
                 frames_read = input_stream_frame;
                 buff = saved_buff;
