@@ -18,6 +18,7 @@
 //#define LOG_NDEBUG 0
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <sys/types.h>
 
 #include <cutils/log.h>
