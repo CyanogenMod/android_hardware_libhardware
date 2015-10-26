@@ -656,10 +656,10 @@ struct audio_hw_device {
                          const struct audio_port_config *config);
 
 #ifdef AUDIO_LISTEN_ENABLED
-    /** This method opens the listen session and returns a handle */
+    /** This method creates the listen session and returns handle */
     int (*open_listen_session)(struct audio_hw_device *dev,
-                               struct listen_open_params*,
-                               struct listen_session** handle);
+                              listen_open_params_t *params,
+                              struct listen_session** handle);
 
     /** This method closes the listen session  */
     int (*close_listen_session)(struct audio_hw_device *dev,
@@ -669,7 +669,8 @@ struct audio_hw_device {
     int (*set_mad_observer)(struct audio_hw_device *dev,
                             listen_callback_t cb_func);
 
-    /*  This method is used for setting listen hal specfic parameters.
+    /**
+     *   This method is used for setting listen hal specfic parameters.
      *  If multiple paramets are set in one call and setting any one of them
      *  fails it will return failure.
      */
