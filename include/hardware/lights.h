@@ -113,7 +113,7 @@ struct light_state_t {
      * The high byte should be ignored.  Callers will set it to 0xff (which
      * would correspond to 255 alpha).
      *
-     * On CM12.1, the high byte value can be implemented to control the LEDs
+     * CyanogenMod: The high byte value can be implemented to control the LEDs
      * Brightness from the Lights settings. The value goes from 0x01 to 0xFF.
      */
     unsigned int color;
