@@ -124,6 +124,27 @@ typedef enum {
                                                  authentication has been performed.  Structure
                                                  defined in hw_auth_token_t in hw_auth_token.h. */
     KM_TAG_MAC_LENGTH = KM_UINT | 1003,       /* MAC or AEAD authentication tag length in bits. */
+
+    /* Tags used only for SOTER */
+    /* Tags used only to check if the key is for SOTER */
+    KM_TAG_SOTER_IS_FROM_SOTER = KM_BOOL | 11000,
+    /* Attach signature signed with ATTK[pri] while exporting public key */
+    KM_TAG_SOTER_IS_AUTO_SIGNED_WITH_ATTK_WHEN_GET_PUBLIC_KEY = KM_BOOL | 11001,
+    /* Attach signature signed with specified private key while exporting public key */
+    KM_TAG_SOTER_IS_AUTO_SIGNED_WITH_COMMON_KEY_WHEN_GET_PUBLIC_KEY = KM_BOOL | 11002,
+    /* keyalias for the keypair of KM_TAG_SOTER_IS_AUTO_SIGNED_WITH_COMMON_KEY_WHEN_GET_PUBLIC_KEY */
+    KM_TAG_SOTER_AUTO_SIGNED_COMMON_KEY_WHEN_GET_PUBLIC_KEY = KM_BYTES | 11003,
+    /* Attach counter while exporting publick key */
+    KM_TAG_SOTER_AUTO_ADD_COUNTER_WHEN_GET_PUBLIC_KEY = KM_BOOL | 11004,
+    /* Attach secmsg(TEE_Name, TEE_Version, Fingerprint_Sensor_Name, Fingerprint_Sensor_Version)
+       fingerprint_id and counter while signing */
+    KM_TAG_SOTER_IS_SECMSG_FID_COUNTER_SIGNED_WHEN_SIGN = KM_BOOL | 11005,
+    /* use and set ATTK index to next backup ATTK */
+    KM_TAG_SOTER_USE_NEXT_ATTK = KM_BOOL | 11006,
+    /* attach soter uid */
+    KM_TAG_SOTER_UID = KM_UINT | 11007,
+    /* attach key blob of KM_TAG_SOTER_AUTO_SIGNED_COMMON_KEY_WHEN_GET_PUBLIC_KEY if needed */
+    KM_TAG_SOTER_AUTO_SIGNED_COMMON_KEY_WHEN_GET_PUBLIC_KEY_BLOB = KM_BYTES | 11008,
 } keymaster_tag_t;
 
 /**
