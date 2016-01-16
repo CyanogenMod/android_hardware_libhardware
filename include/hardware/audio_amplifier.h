@@ -38,6 +38,8 @@ __BEGIN_DECLS
 #define AMPLIFIER_DEVICE_API_VERSION_2_0 HARDWARE_DEVICE_API_VERSION(2, 0)
 #define AMPLIFIER_DEVICE_API_VERSION_CURRENT AMPLIFIER_DEVICE_API_VERSION_2_0
 
+struct str_parms;
+
 typedef struct amplifier_device {
     /**
      * Common methods of the amplifier device. This *must* be the first member
