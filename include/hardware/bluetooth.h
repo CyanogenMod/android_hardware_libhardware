@@ -253,6 +253,13 @@ typedef enum {
      */
     BT_PROPERTY_LOCAL_LE_FEATURES,
 
+    /**
+     * Description - BREDR cleanup status
+     * Access mode - SET.
+     * Data type   - boolean.
+     */
+    BT_PROPERTY_BREDR_CLEANUP,
+
     BT_PROPERTY_REMOTE_DEVICE_TIMESTAMP = 0xFF,
 } bt_property_type_t;
 
