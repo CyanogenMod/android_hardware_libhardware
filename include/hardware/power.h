@@ -62,6 +62,15 @@ typedef enum {
 } feature_t;
 
 /**
+ * Process info, passed as an opaque handle when
+ * using POWER_HINT_LAUNCH_BOOST.
+ */
+typedef struct launch_boost_info {
+    pid_t pid;
+    const char* packageName;
+} launch_boost_info_t;
+
+/**
  * Every hardware module must have a data structure named HAL_MODULE_INFO_SYM
  * and the fields of this data structure must begin with hw_module_t
  * followed by module specific information.
@@ -169,7 +178,6 @@ typedef struct power_module {
     int (*getFeature)(struct power_module *module, feature_t feature);
 
 } power_module_t;
-
 
 __END_DECLS
 
