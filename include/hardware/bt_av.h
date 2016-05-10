@@ -70,6 +70,10 @@ typedef void (* btav_audio_config_callback)(bt_bdaddr_t *bd_addr,
 
 typedef void (* btav_is_multicast_enabled_callback)(int state);
 
+/** Callback to notify reconfig a2dp when A2dp Soft Handoff is triggered
+*/
+typedef void(* btav_reconfig_a2dp_trigger_callback)(int reason, bt_bdaddr_t *bd_addr);
+
 /** BT-AV callback structure. */
 typedef struct {
     /** set to sizeof(btav_callbacks_t) */
@@ -79,6 +83,7 @@ typedef struct {
     btav_audio_config_callback audio_config_cb;
     btav_connection_priority_callback connection_priority_cb;
     btav_is_multicast_enabled_callback multicast_state_cb;
+    btav_reconfig_a2dp_trigger_callback reconfig_a2dp_trigger_cb;
 } btav_callbacks_t;
 
 /**
@@ -102,7 +107,7 @@ typedef struct {
      * Register the BtAv callbacks
      */
     bt_status_t (*init)( btav_callbacks_t* callbacks , int max_a2dp_connections,
-                        int a2dp_multicast_state);
+                        int a2dp_multicast_state, const char *offload_cap);
 
     /** connect to headset */
     bt_status_t (*connect)( bt_bdaddr_t *bd_addr );
