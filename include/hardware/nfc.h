@@ -13,7 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+/******************************************************************************
+*
+*  The original Work has been changed by NXP Semiconductors.
+*
+*  Copyright (C) 2015 NXP Semiconductors
+*
+*  Licensed under the Apache License, Version 2.0 (the "License");
+*  you may not use this file except in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*  http://www.apache.org/licenses/LICENSE-2.0
+*
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License.
+*
+******************************************************************************/
 #ifndef ANDROID_NFC_HAL_INTERFACE_H
 #define ANDROID_NFC_HAL_INTERFACE_H
 
@@ -191,6 +209,12 @@ typedef struct nfc_nci_device {
      * HAL_OPEN_CPLT_EVT will notify when operation is complete.
      */
     int (*power_cycle)(const struct nfc_nci_device *p_dev);
+    /*
+    * (*ioctl)() For P61 power management synchronization
+    * between NFC Wired and SPI.
+    */
+    int (*ioctl)(const struct nfc_nci_device *p_dev, long arg, void *p_data);
+
 } nfc_nci_device_t;
 
 /*
