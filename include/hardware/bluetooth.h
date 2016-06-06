@@ -50,6 +50,7 @@ __BEGIN_DECLS
 #define BT_PROFILE_GATT_ID "gatt"
 #define BT_PROFILE_AV_RC_ID "avrcp"
 #define BT_PROFILE_AV_RC_CTRL_ID "avrcp_ctrl"
+#define BT_PROFILE_VENDOR_ID "vendor"
 
 /** Bluetooth Address */
 typedef struct {
@@ -252,13 +253,6 @@ typedef enum {
      * Data type   - bt_local_le_features_t.
      */
     BT_PROPERTY_LOCAL_LE_FEATURES,
-
-    /**
-     * Description - BREDR cleanup status
-     * Access mode - SET.
-     * Data type   - boolean.
-     */
-    BT_PROPERTY_BREDR_CLEANUP,
 
     BT_PROPERTY_REMOTE_DEVICE_TIMESTAMP = 0xFF,
 } bt_property_type_t;
