@@ -486,7 +486,7 @@ typedef struct {
     int (*initq)(bt_callbacks_t* callbacks);
 
     /** Enable Bluetooth. */
-    int (*enable)(void);
+    int (*enable)(bool guest_mode);
 
     /** Disable Bluetooth. */
     int (*disable)(void);
