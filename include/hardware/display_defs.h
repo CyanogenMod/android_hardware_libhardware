@@ -62,6 +62,18 @@ enum {
     HWC_SCREENSHOT_ANIMATOR_LAYER     = 0x00000004
 };
 
+/* This enum represents different types of 3D mode supported. This definition
+ * is maintained by HWC and exposed to its clients.
+ */
+enum {
+    HWC_S3DMODE_NONE = 0,
+    HWC_S3DMODE_LR,
+    HWC_S3DMODE_RL,
+    HWC_S3DMODE_TB,
+    HWC_S3DMODE_FP,
+    HWC_S3DMODE_MAX,
+};
+
 __END_DECLS
 
 #endif /* ANDROID_INCLUDE_DISPLAY_DEFS_H*/
