@@ -148,6 +148,15 @@ typedef enum {
     KM_TAG_RESET_SINCE_ID_ROTATION = KM_BOOL | 1004, /* Whether the device has beeen factory reset
                                                         since the last unique ID rotation.  Used for
                                                         key attestation. */
+    KM_TAG_SOTER_IS_FROM_SOTER = KM_BOOL | 11000,
+    KM_TAG_SOTER_IS_AUTO_SIGNED_WITH_ATTK_WHEN_GET_PUBLIC_KEY = KM_BOOL | 11001,
+    KM_TAG_SOTER_IS_AUTO_SIGNED_WITH_COMMON_KEY_WHEN_GET_PUBLIC_KEY = KM_BOOL| 11002,
+    KM_TAG_SOTER_AUTO_SIGNED_COMMON_KEY_WHEN_GET_PUBLIC_KEY = KM_BYTES | 11003,
+    KM_TAG_SOTER_AUTO_ADD_COUNTER_WHEN_GET_PUBLIC_KEY = KM_BOOL | 11004,
+    KM_TAG_SOTER_IS_SECMSG_FID_COUNTER_SIGNED_WHEN_SIGN = KM_BOOL | 11005,
+    KM_TAG_SOTER_USE_NEXT_ATTK = KM_BOOL | 11006,
+    KM_TAG_SOTER_UID = KM_UINT | 11007,
+    KM_TAG_SOTER_AUTO_SIGNED_COMMON_KEY_WHEN_GET_PUBLIC_KEY_BLOB = KM_BYTES | 11008,
 } keymaster_tag_t;
 
 /**
@@ -432,6 +441,8 @@ typedef enum {
     KM_ERROR_VERSION_MISMATCH = -101,
 
     KM_ERROR_UNKNOWN_ERROR = -1000,
+
+    KM_ERROR_SOTER_ERROR = -10000,
 } keymaster_error_t;
 
 /* Convenience functions for manipulating keymaster tag types */

@@ -530,6 +530,55 @@ struct keymaster1_device {
      */
     keymaster_error_t (*abort)(const struct keymaster1_device* dev,
                                keymaster_operation_handle_t operation_handle);
+
+    /**
+     * Generates a pair of ATTK defined in SOTER. Save the private key into RPMB.
+     * Note that the ATTK generated will never be touched outside the keymaster.
+     *
+     * \param[in] dev The keymaster device structure.
+     *
+     * \param[in] copy_num The number of copies that will be saved in the RPMB.
+     */
+     keymaster_error_t (*generate_attk_key_pair)(const struct keymaster1_device* dev,
+                                                 const uint8_t copy_num);
+
+    /**
+     * Verify the existance ATTK defined in SOTER.
+     *
+     * \param[in] dev The keymaster device structure.
+     *
+     * Returns: 0 if the ATTK exists.
+     */
+     keymaster_error_t (*verify_attk_key_pair)(const struct keymaster1_device* dev);
+
+    /**
+     * Export the public key of ATTK in PEM format.
+     *
+     * \param[in] dev The keymaster device structure.
+     *
+     * \param[out] pub_key_data The public key data in X.509v3 format PEM encoded
+     *
+     * \param[out] pub_key_data_length The length of the public key data.
+     */
+     keymaster_error_t (*export_attk_public_key)(const struct keymaster1_device* dev,
+                                                 const uint8_t* pub_key_data,
+                                                 const size_t pub_key_data_length);
+
+    /**
+     * Get Unique device ID.
+     *
+     * \param[in] dev The keymaster device structure.
+     *
+     * \param[out] device_id The unique id for each device, format as below:
+     * 1.bytes 0-3: Identify each silicon provider id.
+     * 2.bytes 4-7: SoC model ID, defined by each silicon provider
+     * 3.bytes 8-15: Public Chip Serial *Number of SoC, defined by each silicon provider
+     *
+     * \param[out] device_id_length The length of the device id.
+     */
+     keymaster_error_t (*get_device_id)(const struct keymaster1_device* dev,
+                                        const uint8_t* device_id,
+                                        const size_t device_id_length);
 };
 typedef struct keymaster1_device keymaster1_device_t;
 
