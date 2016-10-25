@@ -25,6 +25,7 @@
 #include <sys/time.h>
 
 #include <log/log.h>
+#include <cutils/list.h>
 #include <cutils/str_parms.h>
 #include <cutils/properties.h>
 
@@ -37,17 +38,6 @@
 #include <tinyalsa/asoundlib.h>
 
 #include <audio_utils/channels.h>
-
-/* FOR TESTING:
- * Set k_force_channels to force the number of channels to present to AudioFlinger.
- *   0 disables (this is default: present the device channels to AudioFlinger).
- *   2 forces to legacy stereo mode.
- *
- * Others values can be tried (up to 8).
- * TODO: AudioFlinger cannot support more than 8 active output channels
- * at this time, so limiting logic needs to be put here or communicated from above.
- */
-static const unsigned k_force_channels = 0;
 
 #include "alsa_device_profile.h"
 #include "alsa_device_proxy.h"
@@ -65,9 +55,11 @@ struct audio_device {
 
     /* output */
     alsa_device_profile out_profile;
+    struct listnode output_stream_list;
 
     /* input */
     alsa_device_profile in_profile;
+    struct listnode input_stream_list;
 
     /* lock input & output sample rates */
     /*FIXME - How do we address multiple output streams? */
@@ -78,14 +70,19 @@ struct audio_device {
     bool standby;
 };
 
+struct stream_lock {
+    pthread_mutex_t lock;               /* see note below on mutex acquisition order */
+    pthread_mutex_t pre_lock;           /* acquire before lock to avoid DOS by playback thread */
+};
+
 struct stream_out {
     struct audio_stream_out stream;
 
-    pthread_mutex_t lock;               /* see note below on mutex acquisition order */
-    pthread_mutex_t pre_lock;           /* acquire before lock to avoid DOS by playback thread */
+    struct stream_lock  lock;
+
     bool standby;
 
-    struct audio_device *dev;           /* hardware information - only using this for the lock */
+    struct audio_device *adev;           /* hardware information - only using this for the lock */
 
     alsa_device_profile * profile;      /* Points to the alsa_device_profile in the audio_device */
     alsa_device_proxy proxy;            /* state of the stream */
@@ -95,7 +92,13 @@ struct stream_out {
                                          * the device is not compatible with AudioFlinger
                                          * capabilities, e.g. exposes too many channels or
                                          * too few channels. */
-    audio_channel_mask_t hal_channel_mask;   /* channel mask exposed to AudioFlinger. */
+    audio_channel_mask_t hal_channel_mask;  /* USB devices deal in channel counts, not masks
+                                             * so the proxy doesn't have a channel_mask, but
+                                             * audio HALs need to talk about channel masks
+                                             * so expose the one calculated by
+                                             * adev_open_output_stream */
+
+    struct listnode list_node;
 
     void * conversion_buffer;           /* any conversions are put into here
                                          * they could come from here too if
@@ -106,11 +109,11 @@ struct stream_out {
 struct stream_in {
     struct audio_stream_in stream;
 
-    pthread_mutex_t lock;               /* see note below on mutex acquisition order */
-    pthread_mutex_t pre_lock;           /* acquire before lock to avoid DOS by capture thread */
+    struct stream_lock  lock;
+
     bool standby;
 
-    struct audio_device *dev;           /* hardware information - only using this for the lock */
+    struct audio_device *adev;           /* hardware information - only using this for the lock */
 
     alsa_device_profile * profile;      /* Points to the alsa_device_profile in the audio_device */
     alsa_device_proxy proxy;            /* state of the stream */
@@ -120,7 +123,13 @@ struct stream_in {
                                          * the device is not compatible with AudioFlinger
                                          * capabilities, e.g. exposes too many channels or
                                          * too few channels. */
-    audio_channel_mask_t hal_channel_mask;   /* channel mask exposed to AudioFlinger. */
+    audio_channel_mask_t hal_channel_mask;  /* USB devices deal in channel counts, not masks
+                                             * so the proxy doesn't have a channel_mask, but
+                                             * audio HALs need to talk about channel masks
+                                             * so expose the one calculated by
+                                             * adev_open_input_stream */
+
+    struct listnode list_node;
 
     /* We may need to read more data from the device in order to data reduce to 16bit, 4chan */
     void * conversion_buffer;           /* any conversions are put into here
@@ -130,11 +139,62 @@ struct stream_in {
 };
 
 /*
+ * Locking Helpers
+ */
+/*
  * NOTE: when multiple mutexes have to be acquired, always take the
  * stream_in or stream_out mutex first, followed by the audio_device mutex.
  * stream pre_lock is always acquired before stream lock to prevent starvation of control thread by
  * higher priority playback or capture thread.
  */
+
+static void stream_lock_init(struct stream_lock *lock) {
+    pthread_mutex_init(&lock->lock, (const pthread_mutexattr_t *) NULL);
+    pthread_mutex_init(&lock->pre_lock, (const pthread_mutexattr_t *) NULL);
+}
+
+static void stream_lock(struct stream_lock *lock) {
+    pthread_mutex_lock(&lock->pre_lock);
+    pthread_mutex_lock(&lock->lock);
+    pthread_mutex_unlock(&lock->pre_lock);
+}
+
+static void stream_unlock(struct stream_lock *lock) {
+    pthread_mutex_unlock(&lock->lock);
+}
+
+static void device_lock(struct audio_device *adev) {
+    pthread_mutex_lock(&adev->lock);
+}
+
+static int device_try_lock(struct audio_device *adev) {
+    return pthread_mutex_trylock(&adev->lock);
+}
+
+static void device_unlock(struct audio_device *adev) {
+    pthread_mutex_unlock(&adev->lock);
+}
+
+/*
+ * streams list management
+ */
+static void adev_add_stream_to_list(
+    struct audio_device* adev, struct listnode* list, struct listnode* stream_node) {
+    device_lock(adev);
+
+    list_add_tail(list, stream_node);
+
+    device_unlock(adev);
+}
+
+static void adev_remove_stream_from_list(
+    struct audio_device* adev, struct listnode* stream_node) {
+    device_lock(adev);
+
+    list_remove(stream_node);
+
+    device_unlock(adev);
+}
 
 /*
  * Extract the card and device numbers from the supplied key/value pairs.
@@ -214,20 +274,6 @@ static char * device_get_parameters(alsa_device_profile * profile, const char * 
     return result_str;
 }
 
-void lock_input_stream(struct stream_in *in)
-{
-    pthread_mutex_lock(&in->pre_lock);
-    pthread_mutex_lock(&in->lock);
-    pthread_mutex_unlock(&in->pre_lock);
-}
-
-void lock_output_stream(struct stream_out *out)
-{
-    pthread_mutex_lock(&out->pre_lock);
-    pthread_mutex_lock(&out->lock);
-    pthread_mutex_unlock(&out->pre_lock);
-}
-
 /*
  * HAl Functions
  */
@@ -285,20 +331,28 @@ static int out_standby(struct audio_stream *stream)
 {
     struct stream_out *out = (struct stream_out *)stream;
 
-    lock_output_stream(out);
+    stream_lock(&out->lock);
     if (!out->standby) {
-        pthread_mutex_lock(&out->dev->lock);
+        device_lock(out->adev);
         proxy_close(&out->proxy);
-        pthread_mutex_unlock(&out->dev->lock);
+        device_unlock(out->adev);
         out->standby = true;
     }
-    pthread_mutex_unlock(&out->lock);
-
+    stream_unlock(&out->lock);
     return 0;
 }
 
-static int out_dump(const struct audio_stream *stream, int fd)
-{
+static int out_dump(const struct audio_stream *stream, int fd) {
+    const struct stream_out* out_stream = (const struct stream_out*) stream;
+
+    if (out_stream != NULL) {
+        dprintf(fd, "Output Profile:\n");
+        profile_dump(out_stream->profile, fd);
+
+        dprintf(fd, "Output Proxy:\n");
+        proxy_dump(&out_stream->proxy, fd);
+    }
+
     return 0;
 }
 
@@ -318,9 +372,9 @@ static int out_set_parameters(struct audio_stream *stream, const char *kvpairs)
         return ret_value;
     }
 
-    lock_output_stream(out);
+    stream_lock(&out->lock);
     /* Lock the device because that is where the profile lives */
-    pthread_mutex_lock(&out->dev->lock);
+    device_lock(out->adev);
 
     if (!profile_is_cached_for(out->profile, card, device)) {
         /* cannot read pcm device info if playback is active */
@@ -339,8 +393,8 @@ static int out_set_parameters(struct audio_stream *stream, const char *kvpairs)
         }
     }
 
-    pthread_mutex_unlock(&out->dev->lock);
-    pthread_mutex_unlock(&out->lock);
+    device_unlock(out->adev);
+    stream_unlock(&out->lock);
 
     return ret_value;
 }
@@ -348,14 +402,13 @@ static int out_set_parameters(struct audio_stream *stream, const char *kvpairs)
 static char * out_get_parameters(const struct audio_stream *stream, const char *keys)
 {
     struct stream_out *out = (struct stream_out *)stream;
-    lock_output_stream(out);
-    pthread_mutex_lock(&out->dev->lock);
+    stream_lock(&out->lock);
+    device_lock(out->adev);
 
     char * params_str =  device_get_parameters(out->profile, keys);
 
-    pthread_mutex_unlock(&out->lock);
-    pthread_mutex_unlock(&out->dev->lock);
-
+    device_unlock(out->adev);
+    stream_unlock(&out->lock);
     return params_str;
 }
 
@@ -383,11 +436,11 @@ static ssize_t out_write(struct audio_stream_out *stream, const void* buffer, si
     int ret;
     struct stream_out *out = (struct stream_out *)stream;
 
-    lock_output_stream(out);
+    stream_lock(&out->lock);
     if (out->standby) {
-        pthread_mutex_lock(&out->dev->lock);
+        device_lock(out->adev);
         ret = start_output_stream(out);
-        pthread_mutex_unlock(&out->dev->lock);
+        device_unlock(out->adev);
         if (ret != 0) {
             goto err;
         }
@@ -422,12 +475,12 @@ static ssize_t out_write(struct audio_stream_out *stream, const void* buffer, si
         proxy_write(&out->proxy, write_buff, num_write_buff_bytes);
     }
 
-    pthread_mutex_unlock(&out->lock);
+    stream_unlock(&out->lock);
 
     return bytes;
 
 err:
-    pthread_mutex_unlock(&out->lock);
+    stream_unlock(&out->lock);
     if (ret != 0) {
         usleep(bytes * 1000000 / audio_stream_out_frame_size(stream) /
                out_get_sample_rate(&stream->common));
@@ -445,12 +498,12 @@ static int out_get_presentation_position(const struct audio_stream_out *stream,
                                          uint64_t *frames, struct timespec *timestamp)
 {
     struct stream_out *out = (struct stream_out *)stream; // discard const qualifier
-    lock_output_stream(out);
+    stream_lock(&out->lock);
 
     const alsa_device_proxy *proxy = &out->proxy;
     const int ret = proxy_get_presentation_position(proxy, frames, timestamp);
 
-    pthread_mutex_unlock(&out->lock);
+    stream_unlock(&out->lock);
     return ret;
 }
 
@@ -469,24 +522,23 @@ static int out_get_next_write_timestamp(const struct audio_stream_out *stream, i
     return -EINVAL;
 }
 
-static int adev_open_output_stream(struct audio_hw_device *dev,
+static int adev_open_output_stream(struct audio_hw_device *hw_dev,
                                    audio_io_handle_t handle,
-                                   audio_devices_t devices,
+                                   audio_devices_t devicesSpec __unused,
                                    audio_output_flags_t flags,
                                    struct audio_config *config,
                                    struct audio_stream_out **stream_out,
                                    const char *address /*__unused*/)
 {
-    ALOGV("adev_open_output_stream() handle:0x%X, device:0x%X, flags:0x%X, addr:%s",
-          handle, devices, flags, address);
-
-    struct audio_device *adev = (struct audio_device *)dev;
+    ALOGV("adev_open_output_stream() handle:0x%X, devicesSpec:0x%X, flags:0x%X, addr:%s",
+          handle, devicesSpec, flags, address);
 
     struct stream_out *out;
 
     out = (struct stream_out *)calloc(1, sizeof(struct stream_out));
-    if (!out)
+    if (out == NULL) {
         return -ENOMEM;
+    }
 
     /* setup function pointers */
     out->stream.common.get_sample_rate = out_get_sample_rate;
@@ -508,12 +560,11 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
     out->stream.get_presentation_position = out_get_presentation_position;
     out->stream.get_next_write_timestamp = out_get_next_write_timestamp;
 
-    pthread_mutex_init(&out->lock, (const pthread_mutexattr_t *) NULL);
-    pthread_mutex_init(&out->pre_lock, (const pthread_mutexattr_t *) NULL);
+    stream_lock_init(&out->lock);
 
-    out->dev = adev;
-    pthread_mutex_lock(&adev->lock);
-    out->profile = &adev->out_profile;
+    out->adev = (struct audio_device *)hw_dev;
+    device_lock(out->adev);
+    out->profile = &out->adev->out_profile;
 
     // build this to hand to the alsa_device_proxy
     struct pcm_config proxy_config;
@@ -536,8 +587,8 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
         ret = -EINVAL;
     }
 
-    out->dev->device_sample_rate = config->sample_rate;
-    pthread_mutex_unlock(&adev->lock);
+    out->adev->device_sample_rate = config->sample_rate;
+    device_unlock(out->adev);
 
     /* Format */
     if (config->format == AUDIO_FORMAT_DEFAULT) {
@@ -555,33 +606,38 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
     }
 
     /* Channels */
-    unsigned proposed_channel_count = 0;
-    if (k_force_channels) {
-        proposed_channel_count = k_force_channels;
-    } else if (config->channel_mask == AUDIO_CHANNEL_NONE) {
-        proposed_channel_count =  profile_get_default_channel_count(out->profile);
-    }
-
-    if (proposed_channel_count != 0) {
-        if (proposed_channel_count <= FCC_2) {
-            // use channel position mask for mono and stereo
-            config->channel_mask = audio_channel_out_mask_from_count(proposed_channel_count);
-        } else {
-            // use channel index mask for multichannel
-            config->channel_mask =
-                    audio_channel_mask_for_index_assignment_from_count(proposed_channel_count);
-        }
+    bool calc_mask = false;
+    if (config->channel_mask == AUDIO_CHANNEL_NONE) {
+        /* query case */
+        out->hal_channel_count = profile_get_default_channel_count(out->profile);
+        calc_mask = true;
     } else {
-        proposed_channel_count = audio_channel_count_from_out_mask(config->channel_mask);
+        /* explicit case */
+        out->hal_channel_count = audio_channel_count_from_out_mask(config->channel_mask);
     }
-    out->hal_channel_count = proposed_channel_count;
 
-    /* we can expose any channel mask, and emulate internally based on channel count. */
+    /* The Framework is currently limited to no more than this number of channels */
+    if (out->hal_channel_count > FCC_8) {
+        out->hal_channel_count = FCC_8;
+        calc_mask = true;
+    }
+
+    if (calc_mask) {
+        /* need to calculate the mask from channel count either because this is the query case
+         * or the specified mask isn't valid for this device, or is more then the FW can handle */
+        config->channel_mask = out->hal_channel_count <= FCC_2
+            /* position mask for mono and stereo*/
+            ? audio_channel_out_mask_from_count(out->hal_channel_count)
+            /* otherwise indexed */
+            : audio_channel_mask_for_index_assignment_from_count(out->hal_channel_count);
+    }
+
     out->hal_channel_mask = config->channel_mask;
 
-    /* no validity checks are needed as proxy_prepare() forces channel_count to be valid.
-     * and we emulate any channel count discrepancies in out_write(). */
-    proxy_config.channels = out->hal_channel_count;
+    // Validate the "logical" channel count against support in the "actual" profile.
+    // if they differ, choose the "actual" number of channels *closest* to the "logical".
+    // and store THAT in proxy_config.channels
+    proxy_config.channels = profile_get_closest_channel_count(out->profile, out->hal_channel_count);
     proxy_prepare(&out->proxy, out->profile, &proxy_config);
 
     /* TODO The retry mechanism isn't implemented in AudioPolicyManager/AudioFlinger. */
@@ -591,6 +647,9 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
     out->conversion_buffer_size = 0;
 
     out->standby = true;
+
+    /* Save the stream for adev_dump() */
+    adev_add_stream_to_list(out->adev, &out->adev->output_stream_list, &out->list_node);
 
     *stream_out = &out->stream;
 
@@ -602,11 +661,13 @@ err_open:
     return -ENOSYS;
 }
 
-static void adev_close_output_stream(struct audio_hw_device *dev,
+static void adev_close_output_stream(struct audio_hw_device *hw_dev,
                                      struct audio_stream_out *stream)
 {
     struct stream_out *out = (struct stream_out *)stream;
     ALOGV("adev_close_output_stream(c:%d d:%d)", out->profile->card, out->profile->device);
+
+    adev_remove_stream_from_list(out->adev, &out->list_node);
 
     /* Close the pcm device */
     out_standby(&stream->common);
@@ -616,14 +677,14 @@ static void adev_close_output_stream(struct audio_hw_device *dev,
     out->conversion_buffer = NULL;
     out->conversion_buffer_size = 0;
 
-    pthread_mutex_lock(&out->dev->lock);
-    out->dev->device_sample_rate = 0;
-    pthread_mutex_unlock(&out->dev->lock);
+    device_lock(out->adev);
+    out->adev->device_sample_rate = 0;
+    device_unlock(out->adev);
 
     free(stream);
 }
 
-static size_t adev_get_input_buffer_size(const struct audio_hw_device *dev,
+static size_t adev_get_input_buffer_size(const struct audio_hw_device *hw_dev,
                                          const struct audio_config *config)
 {
     /* TODO This needs to be calculated based on format/channels/rate */
@@ -676,22 +737,31 @@ static int in_standby(struct audio_stream *stream)
 {
     struct stream_in *in = (struct stream_in *)stream;
 
-    lock_input_stream(in);
+    stream_lock(&in->lock);
     if (!in->standby) {
-        pthread_mutex_lock(&in->dev->lock);
+        device_lock(in->adev);
         proxy_close(&in->proxy);
-        pthread_mutex_unlock(&in->dev->lock);
+        device_unlock(in->adev);
         in->standby = true;
     }
 
-    pthread_mutex_unlock(&in->lock);
+    stream_unlock(&in->lock);
 
     return 0;
 }
 
 static int in_dump(const struct audio_stream *stream, int fd)
 {
-    return 0;
+  const struct stream_in* in_stream = (const struct stream_in*)stream;
+  if (in_stream != NULL) {
+      dprintf(fd, "Input Profile:\n");
+      profile_dump(in_stream->profile, fd);
+
+      dprintf(fd, "Input Proxy:\n");
+      proxy_dump(&in_stream->proxy, fd);
+  }
+
+  return 0;
 }
 
 static int in_set_parameters(struct audio_stream *stream, const char *kvpairs)
@@ -712,8 +782,8 @@ static int in_set_parameters(struct audio_stream *stream, const char *kvpairs)
         return ret_value;
     }
 
-    lock_input_stream(in);
-    pthread_mutex_lock(&in->dev->lock);
+    stream_lock(&in->lock);
+    device_lock(in->adev);
 
     if (card >= 0 && device >= 0 && !profile_is_cached_for(in->profile, card, device)) {
         /* cannot read pcm device info if playback is active */
@@ -732,8 +802,8 @@ static int in_set_parameters(struct audio_stream *stream, const char *kvpairs)
         }
     }
 
-    pthread_mutex_unlock(&in->dev->lock);
-    pthread_mutex_unlock(&in->lock);
+    device_unlock(in->adev);
+    stream_unlock(&in->lock);
 
     return ret_value;
 }
@@ -742,13 +812,13 @@ static char * in_get_parameters(const struct audio_stream *stream, const char *k
 {
     struct stream_in *in = (struct stream_in *)stream;
 
-    lock_input_stream(in);
-    pthread_mutex_lock(&in->dev->lock);
+    stream_lock(&in->lock);
+    device_lock(in->adev);
 
     char * params_str =  device_get_parameters(in->profile, keys);
 
-    pthread_mutex_unlock(&in->dev->lock);
-    pthread_mutex_unlock(&in->lock);
+    device_unlock(in->adev);
+    stream_unlock(&in->lock);
 
     return params_str;
 }
@@ -786,11 +856,11 @@ static ssize_t in_read(struct audio_stream_in *stream, void* buffer, size_t byte
 
     struct stream_in * in = (struct stream_in *)stream;
 
-    lock_input_stream(in);
+    stream_lock(&in->lock);
     if (in->standby) {
-        pthread_mutex_lock(&in->dev->lock);
+        device_lock(in->adev);
         ret = start_input_stream(in);
-        pthread_mutex_unlock(&in->dev->lock);
+        device_unlock(in->adev);
         if (ret != 0) {
             goto err;
         }
@@ -840,16 +910,15 @@ static ssize_t in_read(struct audio_stream_in *stream, void* buffer, size_t byte
             }
         }
 
-        /* no need to acquire in->dev->lock to read mic_muted here as we don't change its state */
-        if (num_read_buff_bytes > 0 && in->dev->mic_muted)
+        /* no need to acquire in->adev->lock to read mic_muted here as we don't change its state */
+        if (num_read_buff_bytes > 0 && in->adev->mic_muted)
             memset(buffer, 0, num_read_buff_bytes);
     } else {
         num_read_buff_bytes = 0; // reset the value after USB headset is unplugged
     }
 
 err:
-    pthread_mutex_unlock(&in->lock);
-
+    stream_unlock(&in->lock);
     return num_read_buff_bytes;
 }
 
@@ -858,9 +927,9 @@ static uint32_t in_get_input_frames_lost(struct audio_stream_in *stream)
     return 0;
 }
 
-static int adev_open_input_stream(struct audio_hw_device *dev,
+static int adev_open_input_stream(struct audio_hw_device *hw_dev,
                                   audio_io_handle_t handle,
-                                  audio_devices_t devices,
+                                  audio_devices_t devicesSpec __unused,
                                   struct audio_config *config,
                                   struct audio_stream_in **stream_in,
                                   audio_input_flags_t flags __unused,
@@ -873,8 +942,9 @@ static int adev_open_input_stream(struct audio_hw_device *dev,
     struct stream_in *in = (struct stream_in *)calloc(1, sizeof(struct stream_in));
     int ret = 0;
 
-    if (in == NULL)
+    if (in == NULL) {
         return -ENOMEM;
+    }
 
     /* setup function pointers */
     in->stream.common.get_sample_rate = in_get_sample_rate;
@@ -894,13 +964,12 @@ static int adev_open_input_stream(struct audio_hw_device *dev,
     in->stream.read = in_read;
     in->stream.get_input_frames_lost = in_get_input_frames_lost;
 
-    pthread_mutex_init(&in->lock, (const pthread_mutexattr_t *) NULL);
-    pthread_mutex_init(&in->pre_lock, (const pthread_mutexattr_t *) NULL);
+    stream_lock_init(&in->lock);
 
-    in->dev = (struct audio_device *)dev;
-    pthread_mutex_lock(&in->dev->lock);
+    in->adev = (struct audio_device *)hw_dev;
+    device_lock(in->adev);
 
-    in->profile = &in->dev->in_profile;
+    in->profile = &in->adev->in_profile;
 
     struct pcm_config proxy_config;
     memset(&proxy_config, 0, sizeof(proxy_config));
@@ -915,17 +984,17 @@ static int adev_open_input_stream(struct audio_hw_device *dev,
         config->sample_rate = profile_get_default_sample_rate(in->profile);
     }
 
-    if (in->dev->device_sample_rate != 0 &&                 /* we are playing, so lock the rate */
-        in->dev->device_sample_rate >= RATELOCK_THRESHOLD) {/* but only for high sample rates */
-        ret = config->sample_rate != in->dev->device_sample_rate ? -EINVAL : 0;
-        proxy_config.rate = config->sample_rate = in->dev->device_sample_rate;
+    if (in->adev->device_sample_rate != 0 &&                 /* we are playing, so lock the rate */
+        in->adev->device_sample_rate >= RATELOCK_THRESHOLD) {/* but only for high sample rates */
+        ret = config->sample_rate != in->adev->device_sample_rate ? -EINVAL : 0;
+        proxy_config.rate = config->sample_rate = in->adev->device_sample_rate;
     } else if (profile_is_sample_rate_valid(in->profile, config->sample_rate)) {
-        in->dev->device_sample_rate = proxy_config.rate = config->sample_rate;
+        in->adev->device_sample_rate = proxy_config.rate = config->sample_rate;
     } else {
         proxy_config.rate = config->sample_rate = profile_get_default_sample_rate(in->profile);
         ret = -EINVAL;
     }
-    pthread_mutex_unlock(&in->dev->lock);
+    device_unlock(in->adev);
 
     /* Format */
     if (config->format == AUDIO_FORMAT_DEFAULT) {
@@ -943,40 +1012,75 @@ static int adev_open_input_stream(struct audio_hw_device *dev,
     }
 
     /* Channels */
-    unsigned proposed_channel_count = 0;
-    if (k_force_channels) {
-        proposed_channel_count = k_force_channels;
-    } else if (config->channel_mask == AUDIO_CHANNEL_NONE) {
-        proposed_channel_count = profile_get_default_channel_count(in->profile);
-    }
-    if (proposed_channel_count != 0) {
-        config->channel_mask = audio_channel_in_mask_from_count(proposed_channel_count);
-        if (config->channel_mask == AUDIO_CHANNEL_INVALID)
-            config->channel_mask =
-                    audio_channel_mask_for_index_assignment_from_count(proposed_channel_count);
-        in->hal_channel_count = proposed_channel_count;
+    bool calc_mask = false;
+    if (config->channel_mask == AUDIO_CHANNEL_NONE) {
+        /* query case */
+        in->hal_channel_count = profile_get_default_channel_count(in->profile);
+        calc_mask = true;
     } else {
+        /* explicit case */
         in->hal_channel_count = audio_channel_count_from_in_mask(config->channel_mask);
     }
-    /* we can expose any channel mask, and emulate internally based on channel count. */
-    in->hal_channel_mask = config->channel_mask;
 
-    proxy_config.channels = profile_get_default_channel_count(in->profile);
-    proxy_prepare(&in->proxy, in->profile, &proxy_config);
+    /* The Framework is currently limited to no more than this number of channels */
+    if (in->hal_channel_count > FCC_8) {
+        in->hal_channel_count = FCC_8;
+        calc_mask = true;
+    }
 
-    in->standby = true;
+    if (calc_mask) {
+        /* need to calculate the mask from channel count either because this is the query case
+         * or the specified mask isn't valid for this device, or is more then the FW can handle */
+        in->hal_channel_mask = in->hal_channel_count <= FCC_2
+            /* position mask for mono & stereo */
+            ? audio_channel_in_mask_from_count(in->hal_channel_count)
+            /* otherwise indexed */
+            : audio_channel_mask_for_index_assignment_from_count(in->hal_channel_count);
 
-    in->conversion_buffer = NULL;
-    in->conversion_buffer_size = 0;
+        // if we change the mask...
+        if (in->hal_channel_mask != config->channel_mask &&
+            config->channel_mask != AUDIO_CHANNEL_NONE) {
+            config->channel_mask = in->hal_channel_mask;
+            ret = -EINVAL;
+        }
+    } else {
+        in->hal_channel_mask = config->channel_mask;
+    }
 
-    *stream_in = &in->stream;
+    if (ret == 0) {
+        // Validate the "logical" channel count against support in the "actual" profile.
+        // if they differ, choose the "actual" number of channels *closest* to the "logical".
+        // and store THAT in proxy_config.channels
+        proxy_config.channels =
+                profile_get_closest_channel_count(in->profile, in->hal_channel_count);
+        proxy_prepare(&in->proxy, in->profile, &proxy_config);
+
+        in->standby = true;
+
+        in->conversion_buffer = NULL;
+        in->conversion_buffer_size = 0;
+
+        *stream_in = &in->stream;
+
+        /* Save this for adev_dump() */
+        adev_add_stream_to_list(in->adev, &in->adev->input_stream_list, &in->list_node);
+    } else {
+        // Deallocate this stream on error, because AudioFlinger won't call
+        // adev_close_input_stream() in this case.
+        *stream_in = NULL;
+        free(in);
+    }
 
     return ret;
 }
 
-static void adev_close_input_stream(struct audio_hw_device *dev, struct audio_stream_in *stream)
+static void adev_close_input_stream(struct audio_hw_device *hw_dev,
+                                    struct audio_stream_in *stream)
 {
     struct stream_in *in = (struct stream_in *)stream;
+    ALOGV("adev_close_input_stream(c:%d d:%d)", in->profile->card, in->profile->device);
+
+    adev_remove_stream_from_list(in->adev, &in->list_node);
 
     /* Close the pcm device */
     in_standby(&stream->common);
@@ -989,52 +1093,94 @@ static void adev_close_input_stream(struct audio_hw_device *dev, struct audio_st
 /*
  * ADEV Functions
  */
-static int adev_set_parameters(struct audio_hw_device *dev, const char *kvpairs)
+static int adev_set_parameters(struct audio_hw_device *hw_dev, const char *kvpairs)
 {
     return 0;
 }
 
-static char * adev_get_parameters(const struct audio_hw_device *dev, const char *keys)
+static char * adev_get_parameters(const struct audio_hw_device *hw_dev, const char *keys)
 {
     return strdup("");
 }
 
-static int adev_init_check(const struct audio_hw_device *dev)
+static int adev_init_check(const struct audio_hw_device *hw_dev)
 {
     return 0;
 }
 
-static int adev_set_voice_volume(struct audio_hw_device *dev, float volume)
+static int adev_set_voice_volume(struct audio_hw_device *hw_dev, float volume)
 {
     return -ENOSYS;
 }
 
-static int adev_set_master_volume(struct audio_hw_device *dev, float volume)
+static int adev_set_master_volume(struct audio_hw_device *hw_dev, float volume)
 {
     return -ENOSYS;
 }
 
-static int adev_set_mode(struct audio_hw_device *dev, audio_mode_t mode)
+static int adev_set_mode(struct audio_hw_device *hw_dev, audio_mode_t mode)
 {
     return 0;
 }
 
-static int adev_set_mic_mute(struct audio_hw_device *dev, bool state)
+static int adev_set_mic_mute(struct audio_hw_device *hw_dev, bool state)
 {
-    struct audio_device * adev = (struct audio_device *)dev;
-    pthread_mutex_lock(&adev->lock);
+    struct audio_device * adev = (struct audio_device *)hw_dev;
+    device_lock(adev);
     adev->mic_muted = state;
-    pthread_mutex_unlock(&adev->lock);
+    device_unlock(adev);
     return -ENOSYS;
 }
 
-static int adev_get_mic_mute(const struct audio_hw_device *dev, bool *state)
+static int adev_get_mic_mute(const struct audio_hw_device *hw_dev, bool *state)
 {
     return -ENOSYS;
 }
 
-static int adev_dump(const audio_hw_device_t *device, int fd)
+static int adev_dump(const struct audio_hw_device *device, int fd)
 {
+    dprintf(fd, "\nUSB audio module:\n");
+
+    struct audio_device* adev = (struct audio_device*)device;
+    const int kNumRetries = 3;
+    const int kSleepTimeMS = 500;
+
+    // use device_try_lock() in case we dumpsys during a deadlock
+    int retry = kNumRetries;
+    while (retry > 0 && device_try_lock(adev) != 0) {
+      sleep(kSleepTimeMS);
+      retry--;
+    }
+
+    if (retry > 0) {
+        if (list_empty(&adev->output_stream_list)) {
+            dprintf(fd, "  No output streams.\n");
+        } else {
+            struct listnode* node;
+            list_for_each(node, &adev->output_stream_list) {
+                struct audio_stream* stream =
+                        (struct audio_stream *)node_to_item(node, struct stream_out, list_node);
+                out_dump(stream, fd);
+            }
+        }
+
+        if (list_empty(&adev->input_stream_list)) {
+            dprintf(fd, "\n  No input streams.\n");
+        } else {
+            struct listnode* node;
+            list_for_each(node, &adev->input_stream_list) {
+                struct audio_stream* stream =
+                        (struct audio_stream *)node_to_item(node, struct stream_in, list_node);
+                in_dump(stream, fd);
+            }
+        }
+
+        device_unlock(adev);
+    } else {
+        // Couldn't lock
+        dprintf(fd, "  Could not obtain device lock.\n");
+    }
+
     return 0;
 }
 
@@ -1057,6 +1203,9 @@ static int adev_open(const hw_module_t* module, const char* name, hw_device_t** 
 
     profile_init(&adev->out_profile, PCM_OUT);
     profile_init(&adev->in_profile, PCM_IN);
+
+    list_init(&adev->output_stream_list);
+    list_init(&adev->input_stream_list);
 
     adev->hw_device.common.tag = HARDWARE_DEVICE_TAG;
     adev->hw_device.common.version = AUDIO_DEVICE_API_VERSION_2_0;

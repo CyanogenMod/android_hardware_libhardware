@@ -74,6 +74,20 @@ typedef enum
     BTHF_CHLD_TYPE_ADDHELDTOCONF,            // Add all held calls to a conference
 } bthf_chld_type_t;
 
+
+/* HF Indicators HFP 1.7 */
+typedef enum
+{
+    BTHF_HF_IND_ENHANCED_DRIVER_SAFETY = 1,
+    BTHF_HF_IND_BATTERY_LEVEL_STATUS = 2,
+} bthf_hf_ind_type_t;
+
+typedef enum
+{
+    BTHF_HF_IND_DISABLED = 0,
+    BTHF_HF_IND_ENABLED,
+} bthf_hf_ind_status_t;
+
 /** Callback for connection state change.
  *  state will have one of the values from BtHfConnectionState
  */
@@ -152,6 +166,15 @@ typedef void (* bthf_unknown_at_cmd_callback)(char *at_string, bt_bdaddr_t *bd_a
  */
 typedef void (* bthf_key_pressed_cmd_callback)(bt_bdaddr_t *bd_addr);
 
+/** Callback for BIND. Pass the remote HF Indicators supported.
+ */
+typedef void (* bthf_bind_cmd_callback)(char *at_string, bt_bdaddr_t *bd_addr);
+
+/** Callback for BIEV. Pass the change in the Remote HF indicator values
+ */
+typedef void (* bthf_biev_cmd_callback)(bthf_hf_ind_type_t ind_id, int ind_value,
+                                        bt_bdaddr_t *bd_addr);
+
 /** BT-HF callback structure. */
 typedef struct {
     /** set to sizeof(BtHfCallbacks) */
@@ -172,6 +195,8 @@ typedef struct {
     bthf_cops_cmd_callback          cops_cmd_cb;
     bthf_clcc_cmd_callback          clcc_cmd_cb;
     bthf_unknown_at_cmd_callback    unknown_at_cmd_cb;
+    bthf_bind_cmd_callback          bind_cb;
+    bthf_biev_cmd_callback          biev_cb;
     bthf_key_pressed_cmd_callback   key_pressed_cmd_cb;
 } bthf_callbacks_t;
 
@@ -310,6 +335,9 @@ typedef struct {
     bt_status_t (*voip_network_type_wifi) (bthf_voip_state_t is_voip_started,
                                            bthf_voip_call_network_type_t is_network_wifi);
 
+    /** Response for HF Indicator change (+BIND) */
+    bt_status_t (*bind_response)(bthf_hf_ind_type_t ind_id, bthf_hf_ind_status_t ind_status,
+                                 bt_bdaddr_t *bd_addr);
 } bthf_interface_t;
 
 __END_DECLS
