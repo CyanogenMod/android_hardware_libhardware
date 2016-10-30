@@ -141,7 +141,12 @@ typedef enum {
     GRALLOC1_FUNCTION_LOCK = 18,
     GRALLOC1_FUNCTION_LOCK_FLEX = 19,
     GRALLOC1_FUNCTION_UNLOCK = 20,
+#ifdef EXYNOS4_ENHANCEMENTS
+    GRALLOC1_FUNCTION_GETPHYS = 21,
+    GRALLOC1_LAST_FUNCTION = 21,
+#else
     GRALLOC1_LAST_FUNCTION = 20,
+#endif
 } gralloc1_function_descriptor_t;
 
 typedef enum {
@@ -881,6 +886,12 @@ typedef int32_t /*gralloc1_error_t*/ (*GRALLOC1_PFN_LOCK_FLEX)(
 typedef int32_t /*gralloc1_error_t*/ (*GRALLOC1_PFN_UNLOCK)(
         gralloc1_device_t* device, buffer_handle_t buffer,
         int32_t* outReleaseFence);
+
+#ifdef EXYNOS4_ENHANCEMENTS
+typedef int32_t /*gralloc1_error_t*/ (*GRALLOC1_PFN_GETPHYS)(
+        gralloc1_device_t* device, buffer_handle_t buffer,
+        void **paddr);
+#endif
 
 __END_DECLS
 
